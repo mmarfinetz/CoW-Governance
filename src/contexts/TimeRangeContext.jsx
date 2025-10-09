@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
 
 /**
  * Time Range Context for global time filtering
@@ -86,23 +86,23 @@ export function TimeRangeProvider({ children }) {
   /**
    * Set time range by preset
    */
-  const setPreset = (preset) => {
+  const setPreset = useCallback((preset) => {
     setSelectedPreset(preset);
-  };
+  }, []);
 
   /**
    * Set custom date range
    */
-  const setCustomRange = (startDate, endDate) => {
+  const setCustomRange = useCallback((startDate, endDate) => {
     setCustomStartDate(startDate);
     setCustomEndDate(endDate);
     setSelectedPreset(TIME_RANGE_PRESETS.CUSTOM);
-  };
+  }, []);
 
   /**
    * Get formatted date range string
    */
-  const getFormattedRange = () => {
+  const getFormattedRange = useCallback(() => {
     const { startDate, endDate } = dateRange;
 
     const formatDate = (date) => {
@@ -114,31 +114,33 @@ export function TimeRangeProvider({ children }) {
     };
 
     return `${formatDate(startDate)} - ${formatDate(endDate)}`;
-  };
+  }, [dateRange]);
 
   /**
    * Check if a timestamp falls within the current range
    */
-  const isInRange = (timestamp) => {
+  const isInRange = useCallback((timestamp) => {
     const { startDate, endDate } = dateRange;
     const date = new Date(timestamp * 1000); // Convert Unix timestamp to JS Date
     return date >= startDate && date <= endDate;
-  };
+  }, [dateRange]);
 
   /**
    * Filter array of items by created timestamp
    */
-  const filterByTimeRange = (items, timestampKey = 'created') => {
+  const filterByTimeRange = useCallback((items, timestampKey = 'created') => {
     if (!items || items.length === 0) return [];
 
     return items.filter(item => {
       const timestamp = item[timestampKey];
       if (!timestamp) return false;
-      return isInRange(timestamp);
+      const { startDate, endDate } = dateRange;
+      const date = new Date(timestamp * 1000);
+      return date >= startDate && date <= endDate;
     });
-  };
+  }, [dateRange]);
 
-  const value = {
+  const value = useMemo(() => ({
     selectedPreset,
     dateRange,
     customStartDate,
@@ -148,7 +150,7 @@ export function TimeRangeProvider({ children }) {
     getFormattedRange,
     isInRange,
     filterByTimeRange
-  };
+  }), [selectedPreset, dateRange, customStartDate, customEndDate, setPreset, setCustomRange, getFormattedRange, isInRange, filterByTimeRange]);
 
   return (
     <TimeRangeContext.Provider value={value}>
