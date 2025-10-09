@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchProposals, fetchVotes } from '../services/snapshotService';
 import { getCachedProposals } from '../services/cacheService';
 import { useTimeRange } from '../contexts/TimeRangeContext';
@@ -14,7 +14,7 @@ export function useProposalData(shouldFetch = true) {
 
   const { filterByTimeRange, dateRange } = useTimeRange();
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -69,14 +69,13 @@ export function useProposalData(shouldFetch = true) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterByTimeRange]);
 
   useEffect(() => {
     if (shouldFetch) {
       fetchData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shouldFetch, dateRange]);
+  }, [shouldFetch, fetchData]);
 
   // Helper function to fetch votes for a specific proposal
   const fetchProposalVotes = async (proposalId) => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchProposals, fetchSpaceInfo, calculateGovernanceMetrics } from '../services/snapshotService';
 import { getCachedProposals } from '../services/cacheService';
 import { useTimeRange } from '../contexts/TimeRangeContext';
@@ -14,7 +14,7 @@ export function useGovernanceData() {
 
   const { filterByTimeRange, dateRange } = useTimeRange();
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -51,12 +51,11 @@ export function useGovernanceData() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterByTimeRange]);
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateRange]);
+  }, [fetchData]);
 
   return {
     data,
