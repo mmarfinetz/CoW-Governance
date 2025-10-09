@@ -30,14 +30,18 @@ export function useGovernanceData() {
       // Calculate metrics on filtered proposals
       const metrics = calculateGovernanceMetrics(filteredProposals);
 
+      // Convert voting period and delay from seconds to days
+      const votingPeriodSeconds = spaceInfo.voting?.period || 604800; // Default: 7 days in seconds
+      const votingDelaySeconds = spaceInfo.voting?.delay || 259200; // Default: 3 days in seconds
+      
       setData({
         proposals: filteredProposals,
         allProposals: proposals, // Keep unfiltered for reference
         spaceInfo,
         metrics,
         quorum: spaceInfo.voting?.quorum || 35000000,
-        votingPeriod: spaceInfo.voting?.period || 7,
-        votingDelay: spaceInfo.voting?.delay || 3
+        votingPeriod: Math.round(votingPeriodSeconds / 86400), // Convert seconds to days
+        votingDelay: Math.round(votingDelaySeconds / 86400) // Convert seconds to days
       });
 
       setLastUpdated(new Date());
