@@ -22,46 +22,63 @@ React Error #310 ("Maximum update depth exceeded") occurs when:
 In our case, both `useProposalData.js` and `useGovernanceData.js` had:
 
 ```javascript
-// ❌ Problem: filterByTimeRange changes on every render (even though memoized)
+// ❌ Problem: fetchData is recreated on every render
+const fetchData = async () => {
+  // ... fetch logic ...
+};
+
 useEffect(() => {
   fetchData();
-}, [filterByTimeRange]);
+}, [/* missing fetchData dependency */]);
 ```
 
-Even though we wrapped `filterByTimeRange` in `useCallback`, using it as a dependency in multiple hooks was still causing issues due to React's reconciliation process.
+The `fetchData` function was not memoized, so it was recreated on every render. This caused:
+1. The `refetch` function returned from the hook to change on every render
+2. Any component using `refetch` would re-render infinitely
+3. Violating React's exhaustive-deps rule (which we had to disable)
 
 ## Solution
 
-### Changed Dependency from Function to Object
+### Wrapped fetchData in useCallback
 
-Instead of depending on the `filterByTimeRange` function, we now depend on the underlying `dateRange` object:
+The proper fix was to wrap the `fetchData` function in `useCallback` with the correct dependencies:
 
 ```javascript
-// ✅ Fixed: dateRange only changes when actual dates change
+// ✅ Fixed: Stable fetchData function
 const { filterByTimeRange, dateRange } = useTimeRange();
 
+const fetchData = useCallback(async () => {
+  // ... fetch logic using filterByTimeRange ...
+}, [filterByTimeRange]); // Only recreate when filterByTimeRange changes
+
 useEffect(() => {
-  fetchData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [dateRange]); // Changed from filterByTimeRange to dateRange
+  if (shouldFetch) {
+    fetchData();
+  }
+}, [shouldFetch, fetchData]); // Depend on the stable fetchData
 ```
 
-### Why This Works Better
+### Why This Works
 
-1. **`dateRange`** is a memoized object that only changes when dates actually change
-2. **Functions** can have subtle reference changes even when memoized
-3. Depending on the data (dateRange) rather than the transformer (filterByTimeRange) is more stable
-4. Follows React best practices for effect dependencies
+1. **`fetchData`** is now memoized and only recreates when `filterByTimeRange` changes
+2. **`filterByTimeRange`** is stable (wrapped in `useCallback` in TimeRangeContext)
+3. The `useEffect` depends on the **stable `fetchData` function** instead of trying to skip dependencies
+4. The `refetch` function returned from the hook is now stable
+5. Follows React best practices - memoize functions that are used as dependencies
 
 ## Files Changed
 
 1. **src/hooks/useProposalData.js**
-   - Changed useEffect dependency from `filterByTimeRange` to `dateRange`
-   - Added `dateRange` to destructured TimeRange context
+   - Added `useCallback` import
+   - Wrapped `fetchData` in `useCallback` with `[filterByTimeRange]` dependency
+   - Changed `useEffect` to depend on `[shouldFetch, fetchData]`
+   - `refetch` function is now stable
 
 2. **src/hooks/useGovernanceData.js**
-   - Changed useEffect dependency from `filterByTimeRange` to `dateRange`
-   - Added `dateRange` to destructured TimeRange context
+   - Added `useCallback` import
+   - Wrapped `fetchData` in `useCallback` with `[filterByTimeRange]` dependency
+   - Changed `useEffect` to depend on `[fetchData]`
+   - `refetch` function is now stable
 
 ## Testing
 
@@ -89,11 +106,12 @@ Together, these changes ensure stable dependencies throughout the app.
 
 To avoid similar issues:
 
-1. ✅ **Prefer data dependencies over function dependencies** in useEffect
-2. ✅ Use `useCallback` for functions that are passed as props or context
-3. ✅ Use `useMemo` for objects/arrays in context values
-4. ✅ Depend on the source data (like `dateRange`) rather than derived functions
-5. ✅ Monitor browser console for "Maximum update depth" warnings
+1. ✅ **Wrap functions in `useCallback`** if they're used as dependencies in `useEffect`
+2. ✅ **Include all dependencies** in `useEffect` - don't use eslint-disable
+3. ✅ Use `useCallback` for functions that are passed as props, context, or returned from hooks
+4. ✅ Use `useMemo` for objects/arrays in context values
+5. ✅ If a function is used in multiple places, memoize it at the source (context/hook)
+6. ✅ Monitor browser console for "Maximum update depth" warnings
 
 ## Deployment
 
@@ -106,5 +124,5 @@ git push
 
 ## Summary
 
-The Proposals tab error was caused by the same root issue as the main dashboard blank screen - unstable function references in `useEffect` dependencies. By switching from depending on `filterByTimeRange` (function) to `dateRange` (data object), we've eliminated all infinite loop issues and the dashboard now runs smoothly across all tabs.
+The Proposals tab error was caused by unstable function references in `useEffect` dependencies. The `fetchData` function was being recreated on every render, causing infinite loops when used as a dependency or returned as `refetch`. By wrapping `fetchData` in `useCallback` with proper dependencies, we've created stable function references that only change when the underlying data (`filterByTimeRange`) actually changes. This eliminates all infinite loop issues and the dashboard now runs smoothly across all tabs.
 
