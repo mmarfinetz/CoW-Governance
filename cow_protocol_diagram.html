@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoW Protocol Ecosystem Architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            overflow-x: hidden;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin: 0;
+            font-size: 14px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        .controls button {
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            background: #2563EB;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .controls button:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+        }
+        .controls button:active {
+            transform: translateY(0);
+        }
+        .zoom-level {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+            min-width: 60px;
+            text-align: center;
+        }
+        #diagram-container {
+            width: 100%;
+            height: calc(100vh - 200px);
+            min-height: 600px;
+            overflow: hidden;
+            position: relative;
+            background: white;
+            cursor: grab;
+        }
+        #diagram-container.grabbing {
+            cursor: grabbing;
+        }
+        #diagram-wrapper {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #mermaid-diagram {
+            display: inline-block;
+            transition: transform 0.3s ease;
+            transform-origin: center center;
+        }
+        /* Readability tweaks for Mermaid output */
+        #mermaid-diagram svg {
+            font-size: 16px;
+        }
+        #mermaid-diagram .label, 
+        #mermaid-diagram .nodeLabel {
+            fill: #111827;
+            color: #111827;
+            font-weight: 600;
+        }
+        #mermaid-diagram .edgePath path {
+            stroke-width: 2.2px;
+            stroke: #111827;
+        }
+        #mermaid-diagram .node rect, 
+        #mermaid-diagram .cluster rect {
+            stroke-width: 2px;
+        }
+        #mermaid-diagram g.edgeLabel rect {
+            fill: #ffffff;
+            fill-opacity: 0.95;
+            stroke: #e5e7eb;
+            rx: 4;
+            ry: 4;
+        }
+        #mermaid-diagram g.edgeLabel .label, 
+        #mermaid-diagram g.edgeLabel span {
+            font-weight: 600;
+            color: #111827;
+        }
+        .legend-container {
+            background: white;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .legend h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 18px;
+        }
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 12px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: #f9fafb;
+            border-radius: 6px;
+        }
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+            border-radius: 4px;
+            border: 2px solid rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        .legend-item span {
+            font-size: 14px;
+            color: #374151;
+        }
+        .hint {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CoW Protocol & DAO Ecosystem Architecture</h1>
+        <p class="subtitle">Comprehensive visualization of protocol components, stakeholders, and value flows</p>
+
+        <div class="controls">
+            <button onclick="zoomOut()">−</button>
+            <button onclick="resetZoom()">Fit to Screen</button>
+            <button onclick="zoomIn()">+</button>
+            <span class="zoom-level" id="zoom-level">100%</span>
+        </div>
+        <p class="hint">💡 Scroll to pan • Click and drag to move • Use buttons to zoom</p>
+    </div>
+
+    <div id="diagram-container">
+        <div id="diagram-wrapper">
+            <div id="mermaid-diagram">
+            <pre class="mermaid">
+graph TB
+    subgraph Users["👥 USERS & INTERFACES"]
+        style Users fill:#E8D5FF,stroke:#9333EA,stroke-width:3px
+        Trader[/"🧑 Trader"/]
+        CoWSwap["CoW Swap UI<br/>(Frontend)"]
+        Widget["CoW Widget<br/>(Embeddable)"]
+        Explorer["CoW Explorer<br/>(Analytics)"]
+        Wallet[/"💰 Wallet<br/>(MetaMask/Safe/WalletConnect)"/]
+    end
+
+    subgraph OffChain["⚙️ OFF-CHAIN SERVICES"]
+        style OffChain fill:#DBEAFE,stroke:#2563EB,stroke-width:3px
+        Orderbook["📖 Orderbook Service<br/>(HTTP API)<br/>Order submission & queries"]
+        Autopilot["🚀 Autopilot<br/>Auction orchestration<br/>Boundary determination"]
+        Driver["🔧 Driver<br/>Solver communication<br/>Solution submission"]
+        Database[("💾 PostgreSQL<br/>Shared State")]
+    end
+
+    subgraph SolverNet["🧮 SOLVER NETWORK"]
+        style SolverNet fill:#FEF3C7,stroke:#F59E0B,stroke-width:3px
+        Solver1["Solver 1<br/>Algorithm A"]
+        Solver2["Solver 2<br/>Algorithm B"]
+        Solver3["Solver 3<br/>Algorithm C"]
+        SolverN["Solver N<br/>..."]
+        Competition{{"⚔️ Competitive<br/>Batch Auction<br/>(every few seconds)"}}
+    end
+
+    subgraph OnChain["⛓️ ON-CHAIN SETTLEMENT"]
+        style OnChain fill:#DBEAFE,stroke:#2563EB,stroke-width:3px
+        Settlement["📜 Settlement Contract<br/>Validates & executes<br/>Atomic settlement"]
+        OrderValidation["🔐 Order Validation<br/>(EIP-712/ERC-1271/<br/>eth_sign/PreSign)"]
+    end
+
+    subgraph Liquidity["💧 LIQUIDITY SOURCES"]
+        style Liquidity fill:#FED7AA,stroke:#EA580C,stroke-width:3px
+        CoWs["🤝 Coincidence of Wants<br/>(Peer-to-peer matches)"]
+        AMMs["🔄 AMMs<br/>(Uniswap/Sushiswap/<br/>Balancer/Curve)"]
+        Aggregators["📊 DEX Aggregators<br/>(1inch/Paraswap/Matcha)"]
+        MMs["🏦 Private Market Makers"]
+    end
+
+    subgraph Governance["🏛️ CoW DAO GOVERNANCE"]
+        style Governance fill:#D1FAE5,stroke:#10B981,stroke-width:3px
+        COWToken["🪙 COW Token<br/>1B supply, 3% max inflation<br/>Voting rights"]
+        vCOW["⏳ vCOW<br/>4-year vesting<br/>1:1 conversion"]
+        Forum["💬 Forum<br/>(forum.cow.fi)<br/>Discussion"]
+        Snapshot["🗳️ Snapshot<br/>(snapshot.org/#/cow.eth)<br/>Voting"]
+        Treasury["🏦 DAO Treasury<br/>44.4% COW supply<br/>xDAI holdings"]
+        Grants["🎁 Grants Program<br/>600K xDAI + 1.4M COW<br/>(+ 5M volume grants)"]
+        Committee["👥 Grant Committee<br/>5 members (3 community, 2 core)<br/>4/5 multisig"]
+    end
+
+    subgraph Fees["💰 VALUE FLOW"]
+        style Fees fill:#FEF9C3,stroke:#EAB308,stroke-width:3px
+        SurplusFee["💵 Surplus Fee<br/>50% capped at 1% volume<br/>(limit orders)"]
+        QuoteFee["💵 Quote Improvement Fee<br/>50% capped at 1% volume<br/>(market orders)"]
+        VolumeFee["💵 Volume Fee<br/>10 bps<br/>(Gnosis Chain)"]
+        PartnerFee["💵 Partner Fees<br/>(Integration-specific)"]
+        SolverReward["🏆 Solver Reward<br/>(Winning solver)"]
+    end
+
+    subgraph Ecosystem["🌐 ECOSYSTEM PRODUCTS"]
+        style Ecosystem fill:#FED7AA,stroke:#EA580C,stroke-width:3px
+        MEVBlocker["🛡️ MEV Blocker<br/>RPC endpoint<br/>Transaction protection"]
+        CoWAMM["🌊 CoW AMM<br/>LVR protection<br/>Balancer integration"]
+    end
+
+    subgraph Chains["🔗 MULTI-CHAIN DEPLOYMENT"]
+        style Chains fill:#E0E7FF,stroke:#4F46E5,stroke-width:3px
+        Ethereum["Ethereum Mainnet"]
+        Gnosis["Gnosis Chain"]
+        BNB["BNB Chain"]
+        Lens["Lens Chain"]
+    end
+
+    %% User Flow
+    Trader -->|"1. Connect wallet"| Wallet
+    Wallet --> CoWSwap
+    Wallet --> Widget
+    Trader -->|"2. Submit signed order<br/>(EIP-712)"| CoWSwap
+    CoWSwap -->|"3. POST /orders"| Orderbook
+    Widget -->|"3. POST /orders"| Orderbook
+
+    %% Off-Chain Processing
+    Orderbook -->|"Store orders"| Database
+    Database -->|"Read pending orders"| Autopilot
+    Autopilot -->|"4. Create auction instance<br/>(batch orders)"| Competition
+
+    %% Solver Competition
+    Competition --> Solver1
+    Competition --> Solver2
+    Competition --> Solver3
+    Competition --> SolverN
+
+    Solver1 -->|"Query CoWs"| CoWs
+    Solver1 -->|"Query liquidity"| AMMs
+    Solver1 -->|"Query liquidity"| Aggregators
+    Solver1 -->|"Query liquidity"| MMs
+
+    Solver2 -->|"Query CoWs"| CoWs
+    Solver2 -->|"Query liquidity"| AMMs
+    Solver2 -->|"Query liquidity"| Aggregators
+
+    Solver3 -->|"Query CoWs"| CoWs
+    Solver3 -->|"Query liquidity"| AMMs
+
+    Solver1 -->|"5. Submit solution"| Competition
+    Solver2 -->|"5. Submit solution"| Competition
+    Solver3 -->|"5. Submit solution"| Competition
+    SolverN -->|"5. Submit solution"| Competition
+
+    Competition -->|"6. Select winner<br/>(best objective)"| Driver
+    Driver -->|"7. Submit winning solution"| Settlement
+
+    %% Settlement & Execution
+    Settlement -->|"Validate signatures"| OrderValidation
+    OrderValidation -->|"Execute if valid"| Settlement
+    Settlement -->|"8. Execute CoW matches<br/>(peer-to-peer)"| CoWs
+    Settlement -->|"8. Execute AMM swaps"| AMMs
+    Settlement -->|"8. Execute aggregator routes"| Aggregators
+    Settlement -->|"8. Execute MM trades"| MMs
+
+    Settlement -->|"9. Token transfer<br/>to trader"| Wallet
+    Settlement -->|"Transaction data"| Explorer
+
+    %% Fee Collection
+    Settlement -->|"Collect fees"| SurplusFee
+    Settlement -->|"Collect fees"| QuoteFee
+    Settlement -->|"Collect fees"| VolumeFee
+    Settlement -->|"Collect fees"| PartnerFee
+    SurplusFee --> Treasury
+    QuoteFee --> Treasury
+    VolumeFee --> Treasury
+    PartnerFee --> Treasury
+
+    Driver -->|"Pay reward"| SolverReward
+
+    %% Governance Flow
+    COWToken -.->|"Voting weight"| Snapshot
+    vCOW -.->|"Voting weight"| Snapshot
+    vCOW -.->|"Vesting 1:1"| COWToken
+
+    Trader -->|"Create proposal<br/>(requires 10K COW)"| Forum
+    Forum -->|"Discussion (6 days)"| Snapshot
+    Snapshot -->|"Vote (7 days)<br/>oSnap execution"| Treasury
+
+    Treasury -->|"Fund operations"| Grants
+    Grants -->|"Committee oversight"| Committee
+    Committee -->|"Award grants"| Solver1
+    Committee -->|"Award grants"| CoWSwap
+    Committee -->|"Award grants"| Widget
+
+    Treasury -.->|"Protocol governance"| Settlement
+    Treasury -.->|"Fee model adjustments"| SurplusFee
+
+    %% Ecosystem Integration
+    MEVBlocker -.->|"Complementary protection"| Trader
+    CoWAMM -->|"Uses solver network"| Competition
+    CoWAMM -->|"Participates in auctions"| Autopilot
+
+    %% Multi-Chain
+    Settlement -->|"Deployed on"| Ethereum
+    Settlement -->|"Deployed on"| Gnosis
+    Settlement -->|"Deployed on"| BNB
+    Settlement -->|"Deployed on"| Lens
+
+    CoWSwap -.->|"Cross-chain swaps"| Ethereum
+    CoWSwap -.->|"Cross-chain swaps"| Gnosis
+    CoWSwap -.->|"Gasless trading"| BNB
+    CoWSwap -.->|"Gasless trading"| Lens
+
+    %% Styling
+    classDef userStyle fill:#E8D5FF,stroke:#9333EA,stroke-width:2px
+    classDef protocolStyle fill:#DBEAFE,stroke:#2563EB,stroke-width:2px
+    classDef solverStyle fill:#FEF3C7,stroke:#F59E0B,stroke-width:2px
+    classDef liquidityStyle fill:#FED7AA,stroke:#EA580C,stroke-width:2px
+    classDef governanceStyle fill:#D1FAE5,stroke:#10B981,stroke-width:2px
+    classDef feeStyle fill:#FEF9C3,stroke:#EAB308,stroke-width:2px
+
+    class Trader,CoWSwap,Widget,Explorer,Wallet userStyle
+    class Orderbook,Autopilot,Driver,Database,Settlement,OrderValidation protocolStyle
+    class Solver1,Solver2,Solver3,SolverN,Competition solverStyle
+    class CoWs,AMMs,Aggregators,MMs liquidityStyle
+    class COWToken,vCOW,Forum,Snapshot,Treasury,Grants,Committee governanceStyle
+    class SurplusFee,QuoteFee,VolumeFee,PartnerFee,SolverReward feeStyle
+            </pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="legend-container">
+        <div class="legend">
+            <h3>Legend - Component Types</h3>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <span class="legend-color" style="background:#E8D5FF; border-color:#9333EA;"></span>
+                    <span>Users & Interfaces</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background:#DBEAFE; border-color:#2563EB;"></span>
+                    <span>Protocol Services</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background:#FEF3C7; border-color:#F59E0B;"></span>
+                    <span>Solver Network</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background:#FED7AA; border-color:#EA580C;"></span>
+                    <span>Liquidity Sources</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background:#D1FAE5; border-color:#10B981;"></span>
+                    <span>DAO Governance</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background:#FEF9C3; border-color:#EAB308;"></span>
+                    <span>Value Flow & Fees</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background:#E0E7FF; border-color:#4F46E5;"></span>
+                    <span>Multi-Chain</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentZoom = 1.0;
+        let isDragging = false;
+        let startX, startY, scrollLeft, scrollTop;
+        
+        mermaid.initialize({
+            startOnLoad: true,
+            securityLevel: 'loose',
+            theme: 'base',
+            themeVariables: {
+                fontSize: '16px',
+                fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif",
+                textColor: '#111827',
+                primaryTextColor: '#111827',
+                primaryBorderColor: '#111827',
+                lineColor: '#111827',
+                clusterBkg: '#ffffff',
+                clusterBorder: '#374151',
+                background: '#ffffff',
+                edgeLabelBackground: '#ffffff'
+            },
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                curve: 'linear',
+                padding: 20,
+                nodeSpacing: 50,
+                rankSpacing: 60,
+                arrowMarkerAbsolute: true
+            }
+        });
+
+        function updateZoomDisplay() {
+            document.getElementById('zoom-level').textContent = Math.round(currentZoom * 100) + '%';
+        }
+
+        function zoomIn() {
+            if (currentZoom < 2.0) {
+                currentZoom += 0.2;
+                applyZoom();
+            }
+        }
+
+        function zoomOut() {
+            if (currentZoom > 0.4) {
+                currentZoom -= 0.2;
+                applyZoom();
+            }
+        }
+
+        function resetZoom() {
+            const container = document.getElementById('diagram-container');
+            const diagram = document.getElementById('mermaid-diagram');
+            const svg = diagram.querySelector('svg');
+            
+            if (svg && container) {
+                const containerRect = container.getBoundingClientRect();
+                const svgRect = svg.getBoundingClientRect();
+                
+                // Calculate zoom to fit
+                const scaleX = (containerRect.width * 0.9) / svgRect.width;
+                const scaleY = (containerRect.height * 0.9) / svgRect.height;
+                currentZoom = Math.min(scaleX, scaleY, 1.0);
+                
+                applyZoom();
+                
+                // Center the diagram
+                const wrapper = document.getElementById('diagram-wrapper');
+                wrapper.scrollLeft = (wrapper.scrollWidth - wrapper.clientWidth) / 2;
+                wrapper.scrollTop = (wrapper.scrollHeight - wrapper.clientHeight) / 2;
+            }
+        }
+
+        function applyZoom() {
+            const diagram = document.getElementById('mermaid-diagram');
+            if (diagram) {
+                diagram.style.transform = `scale(${currentZoom})`;
+                updateZoomDisplay();
+            }
+        }
+
+        // Drag to pan functionality
+        const wrapper = document.getElementById('diagram-wrapper');
+        const container = document.getElementById('diagram-container');
+
+        wrapper.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            container.classList.add('grabbing');
+            startX = e.pageX - wrapper.offsetLeft;
+            startY = e.pageY - wrapper.offsetTop;
+            scrollLeft = wrapper.scrollLeft;
+            scrollTop = wrapper.scrollTop;
+        });
+
+        wrapper.addEventListener('mouseleave', () => {
+            isDragging = false;
+            container.classList.remove('grabbing');
+        });
+
+        wrapper.addEventListener('mouseup', () => {
+            isDragging = false;
+            container.classList.remove('grabbing');
+        });
+
+        wrapper.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const x = e.pageX - wrapper.offsetLeft;
+            const y = e.pageY - wrapper.offsetTop;
+            const walkX = (x - startX) * 1.5;
+            const walkY = (y - startY) * 1.5;
+            wrapper.scrollLeft = scrollLeft - walkX;
+            wrapper.scrollTop = scrollTop - walkY;
+        });
+
+        // Mouse wheel zoom (optional)
+        wrapper.addEventListener('wheel', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                if (e.deltaY < 0) {
+                    zoomIn();
+                } else {
+                    zoomOut();
+                }
+            }
+        }, { passive: false });
+
+        // Auto-fit on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                resetZoom();
+            }, 500);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '+' || e.key === '=') {
+                e.preventDefault();
+                zoomIn();
+            } else if (e.key === '-' || e.key === '_') {
+                e.preventDefault();
+                zoomOut();
+            } else if (e.key === '0') {
+                e.preventDefault();
+                resetZoom();
+            }
+        });
+    </script>
+</body>
+</html>

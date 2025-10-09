@@ -1,0 +1,203 @@
+import axios from 'axios';
+import { API_CONFIG } from '../config/apiConfig';
+
+const SNAPSHOT_API = API_CONFIG.snapshot.endpoint;
+const COW_SPACE = API_CONFIG.snapshot.space;
+
+/**
+ * Fetch proposals from Snapshot for CoW DAO
+ */
+export async function fetchProposals(first = 100) {
+  const query = `
+    query Proposals {
+      proposals(
+        first: ${first},
+        where: { space_in: ["${COW_SPACE}"] },
+        orderBy: "created",
+        orderDirection: desc
+      ) {
+        id
+        title
+        body
+        choices
+        start
+        end
+        snapshot
+        state
+        scores
+        scores_total
+        scores_state
+        quorum
+        author
+        created
+        type
+      }
+    }
+  `;
+
+  try {
+    const response = await axios.post(SNAPSHOT_API, { query });
+    return response.data.data.proposals;
+  } catch (error) {
+    console.error('Error fetching proposals from Snapshot:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch a single proposal by ID
+ */
+export async function fetchProposal(proposalId) {
+  const query = `
+    query Proposal {
+      proposal(id: "${proposalId}") {
+        id
+        title
+        body
+        choices
+        start
+        end
+        snapshot
+        state
+        scores
+        scores_total
+        scores_state
+        quorum
+        author
+        created
+        type
+        strategies {
+          name
+          params
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await axios.post(SNAPSHOT_API, { query });
+    return response.data.data.proposal;
+  } catch (error) {
+    console.error('Error fetching proposal from Snapshot:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch votes for a specific proposal
+ */
+export async function fetchVotes(proposalId, first = 1000) {
+  const query = `
+    query Votes {
+      votes(
+        first: ${first},
+        where: { proposal: "${proposalId}" },
+        orderBy: "vp",
+        orderDirection: desc
+      ) {
+        id
+        voter
+        vp
+        vp_state
+        created
+        choice
+      }
+    }
+  `;
+
+  try {
+    const response = await axios.post(SNAPSHOT_API, { query });
+    return response.data.data.votes;
+  } catch (error) {
+    console.error('Error fetching votes from Snapshot:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch Snapshot space information for CoW DAO
+ */
+export async function fetchSpaceInfo() {
+  const query = `
+    query Space {
+      space(id: "${COW_SPACE}") {
+        id
+        name
+        about
+        network
+        symbol
+        members
+        admins
+        categories
+        avatar
+        voting {
+          delay
+          period
+          quorum
+          type
+        }
+        strategies {
+          name
+          params
+        }
+        validation {
+          name
+          params
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await axios.post(SNAPSHOT_API, { query });
+    return response.data.data.space;
+  } catch (error) {
+    console.error('Error fetching space info from Snapshot:', error);
+    throw error;
+  }
+}
+
+/**
+ * Calculate governance metrics from proposals
+ */
+export function calculateGovernanceMetrics(proposals) {
+  if (!proposals || proposals.length === 0) {
+    return {
+      totalProposals: 0,
+      activeProposals: 0,
+      averageParticipation: 0,
+      maxVotes: 0,
+      successRate: 0
+    };
+  }
+
+  const activeProposals = proposals.filter(p => p.state === 'active').length;
+
+  // Calculate average participation from closed proposals
+  const closedProposals = proposals.filter(p => p.state === 'closed' && p.scores_total);
+  const avgParticipation = closedProposals.length > 0
+    ? closedProposals.reduce((sum, p) => sum + p.scores_total, 0) / closedProposals.length
+    : 0;
+
+  // Find max votes ever recorded
+  const maxVotes = Math.max(...proposals.map(p => p.scores_total || 0));
+
+  // Calculate success rate (proposals that passed vs total)
+  const passedProposals = proposals.filter(p => {
+    if (p.state !== 'closed' || !p.scores || !p.quorum) return false;
+    const topScore = Math.max(...p.scores);
+    return p.scores_total >= p.quorum && topScore > (p.scores_total - topScore);
+  }).length;
+
+  const successRate = closedProposals.length > 0
+    ? (passedProposals / closedProposals.length) * 100
+    : 0;
+
+  return {
+    totalProposals: proposals.length,
+    activeProposals,
+    averageParticipation: avgParticipation,
+    maxVotes,
+    successRate
+  };
+}

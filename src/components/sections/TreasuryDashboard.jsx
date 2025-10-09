@@ -1,0 +1,193 @@
+import React, { useMemo } from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { DollarSign, TrendingUp, Wallet } from 'lucide-react';
+import { SectionHeader } from '../shared/SectionHeader';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
+import { ErrorMessage } from '../shared/ErrorMessage';
+import { MetricCard } from '../shared/MetricCard';
+import { ChartContainer } from '../shared/ChartContainer';
+import { useTreasuryData } from '../../hooks/useTreasuryData';
+import { useTokenData } from '../../hooks/useTokenData';
+
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6'];
+
+export function TreasuryDashboard() {
+  const { data: treasuryData, loading, error, refetch } = useTreasuryData();
+  const { data: tokenData } = useTokenData();
+
+  const compositionData = useMemo(() => {
+    if (!treasuryData?.composition) return [];
+
+    return [
+      { name: 'Stablecoins', value: treasuryData.composition.stables || 0 },
+      { name: 'ETH/WETH', value: treasuryData.composition.eth || 0 },
+      { name: 'COW/vCOW', value: treasuryData.composition.cow || 0 },
+      { name: 'Other Tokens', value: treasuryData.composition.other || 0 }
+    ].filter(item => item.value > 0);
+  }, [treasuryData]);
+
+  const budgetData = [
+    { name: 'Treasury Core (CIP-62)', amount: 80000000, type: 'COW' },
+    { name: 'Grants Committee', amount: 600000, type: 'xDAI' },
+    { name: 'Grants - Volume Rewards', amount: 4990000, type: 'COW' },
+    { name: 'Grants - General', amount: 1465260, type: 'COW' }
+  ];
+
+  const feeData = [
+    { name: 'Surplus Fee', description: '50% of surplus, capped at 1% notional' },
+    { name: 'Quote Improvement', description: '50% of improvement, capped at 1%' },
+    { name: 'Gnosis Chain Volume', description: '10 basis points' }
+  ];
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader title="Treasury & Economic Model" />
+        <ErrorMessage message={error} onRetry={refetch} />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader title="Treasury & Economic Model" />
+        <LoadingSpinner message="Loading treasury data from Safe and Dune APIs..." />
+      </div>
+    );
+  }
+
+  // If no data, show message - NO FALLBACK
+  if (!treasuryData?.totalValue && !error) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader title="Treasury & Economic Model" />
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <p className="text-yellow-800">No treasury data available from APIs. Check console for details.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const totalValue = treasuryData?.totalValue || 0;
+  const cowPrice = tokenData?.price || 0;
+
+  return (
+    <div className="space-y-6">
+      <SectionHeader
+        title="Treasury & Economic Model"
+        subtitle={`Total treasury value: $${(totalValue / 1000000).toFixed(1)}M • Data source: ${treasuryData?.source || 'Safe + Dune'}`}
+      />
+
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <MetricCard
+          title="Total Treasury"
+          value={`$${(totalValue / 1000000).toFixed(1)}M`}
+          subtitle="Across all Safes"
+          icon={DollarSign}
+          color="green"
+        />
+        <MetricCard
+          title="COW Token Price"
+          value={`$${cowPrice.toFixed(4)}`}
+          subtitle={`${tokenData?.priceChange24h?.toFixed(2)}% (24h)`}
+          icon={TrendingUp}
+          color="blue"
+          trend={`${tokenData?.priceChange24h > 0 ? '+' : ''}${tokenData?.priceChange24h?.toFixed(2)}%`}
+          trendDirection={tokenData?.priceChange24h > 0 ? 'up' : 'down'}
+        />
+        <MetricCard
+          title="Market Cap"
+          value={`$${((tokenData?.marketCap || 0) / 1000000).toFixed(1)}M`}
+          subtitle="Fully diluted valuation"
+          icon={Wallet}
+          color="purple"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Treasury Composition */}
+        <ChartContainer
+          title="Treasury Composition"
+          subtitle="Asset distribution across all Safes"
+        >
+          {compositionData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={compositionData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, value }) => `${name}: $${(value / 1000000).toFixed(1)}M`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {compositionData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => `$${(value / 1000000).toFixed(2)}M`} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              No composition data available
+            </div>
+          )}
+        </ChartContainer>
+
+        {/* Budget Allocation */}
+        <ChartContainer
+          title="Budget Allocations"
+          subtitle="Major DAO budget commitments"
+        >
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={budgetData} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" tickFormatter={(val) => `${(val / 1000000).toFixed(0)}M`} />
+              <YAxis type="category" dataKey="name" width={150} />
+              <Tooltip formatter={(val, name) => [`${(val / 1000000).toFixed(2)}M ${budgetData.find(d => d.amount === val)?.type}`, 'Amount']} />
+              <Bar dataKey="amount" fill="#3B82F6" />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </div>
+
+      {/* Revenue Streams */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Streams</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {feeData.map((fee, idx) => (
+            <div key={idx} className="border border-gray-200 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-900 mb-2">{fee.name}</h4>
+              <p className="text-sm text-gray-600">{fee.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Token Distribution */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Token Distribution (TGE)</h3>
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          {[
+            { label: 'Treasury', value: '44.4%' },
+            { label: 'Team', value: '15%' },
+            { label: 'GnosisDAO', value: '10%' },
+            { label: 'Community', value: '10%' },
+            { label: 'Investment', value: '10%' },
+            { label: 'Advisory', value: '0.6%' }
+          ].map((item, idx) => (
+            <div key={idx} className="text-center">
+              <p className="text-2xl font-bold text-blue-600">{item.value}</p>
+              <p className="text-sm text-gray-600 mt-1">{item.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
