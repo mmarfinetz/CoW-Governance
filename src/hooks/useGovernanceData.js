@@ -12,7 +12,7 @@ export function useGovernanceData() {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
 
-  const { filterByTimeRange } = useTimeRange();
+  const { filterByTimeRange, dateRange } = useTimeRange();
 
   const fetchData = async () => {
     try {
@@ -55,7 +55,8 @@ export function useGovernanceData() {
 
   useEffect(() => {
     fetchData();
-  }, [filterByTimeRange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange]);
 
   return {
     data,

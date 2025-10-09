@@ -12,7 +12,7 @@ export function useProposalData(shouldFetch = true) {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
 
-  const { filterByTimeRange } = useTimeRange();
+  const { filterByTimeRange, dateRange } = useTimeRange();
 
   const fetchData = async () => {
     try {
@@ -75,7 +75,8 @@ export function useProposalData(shouldFetch = true) {
     if (shouldFetch) {
       fetchData();
     }
-  }, [shouldFetch, filterByTimeRange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldFetch, dateRange]);
 
   // Helper function to fetch votes for a specific proposal
   const fetchProposalVotes = async (proposalId) => {
