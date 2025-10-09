@@ -1,279 +1,187 @@
-# CoW DAO Governance Dashboard - Implementation Summary
+# Query Version Tracking & Enhanced Configuration - Implementation Summary
 
-## ✅ Project Completed
+## Overview
 
-A fully functional, production-ready governance dashboard with **100% real data** from live APIs - **zero mock data**.
+Complete implementation of query version tracking and enhanced configuration management for the CoW DAO Governance Dashboard.
 
-## What Was Built
-
-### Core Features Implemented
-
-#### 1. **Governance Overview Dashboard**
-- ✅ Real-time governance health score (0-100)
-- ✅ 6 key metric cards with live data
-- ✅ Current quorum: 35M COW (from Snapshot API)
-- ✅ Active proposals count (real-time from Snapshot)
-- ✅ Average participation calculated from actual votes
-- ✅ Live treasury value from Safe Transaction Service
-- ✅ Token holder count from Etherscan API
-- ✅ Voting period and execution delay from Snapshot space config
-
-#### 2. **Proposal Analytics**
-- ✅ Complete proposal history from cow.eth Snapshot space
-- ✅ Proposal timeline bar chart (last 12 months)
-- ✅ Category breakdown pie chart (auto-categorized from titles)
-- ✅ Voting participation line chart vs 35M quorum
-- ✅ Sortable table with all proposals
-- ✅ Real voting data with CIP numbers
-- ✅ Status badges (Active, Passed, Failed)
-
-#### 3. **Treasury Dashboard**
-- ✅ Live COW token price from CoinGecko
-- ✅ Market cap and 24h price change
-- ✅ Treasury composition pie chart
-- ✅ Budget allocation bar chart (CIP-62, CIP-63 data)
-- ✅ Revenue streams breakdown (3 fee models)
-- ✅ Token distribution at TGE
-
-## Real Data Sources Integration
-
-### API Services Implemented (6 total)
-
-1. **Snapshot GraphQL API** ✅
-   - Endpoint: `https://hub.snapshot.org/graphql`
-   - Fetches: All proposals, votes, space info for cow.eth
-   - Features: Pagination, filtering, vote aggregation
-   - Rate limit: 60 req/min (free)
-
-2. **Dune Analytics API** ✅
-   - Fetches: Treasury composition, solver rewards, revenue data
-   - Features: Query execution, result polling, parallel fetching
-   - Fallback: Graceful degradation if API key invalid
-
-3. **CoinGecko API** ✅
-   - Fetches: COW token price, market cap, volume, holder count
-   - Features: Simple price endpoint + comprehensive token data
-   - Auto-refresh: Price updates every 2 minutes
-   - Rate limit: 30 req/min (free tier)
-
-4. **Etherscan API** ✅
-   - Fetches: Token holder count, top holders, token supply
-   - Features: Concentration metrics calculation
-   - Rate limit: 5 req/sec (free tier)
-
-5. **Safe Transaction Service API** ✅
-   - Fetches: Safe wallet info, balances, transactions
-   - Features: Multi-Safe aggregation, USD value calculation
-   - Known Safe: Solver Payouts (0xA03be...4930)
-
-6. **CoW Protocol API** ✅
-   - Fetches: Protocol health, surplus metrics
-   - Endpoint: `https://api.cow.fi/mainnet`
-   - Features: Health checks, order stats
-
-### Caching Layer Implemented ✅
-
-Smart caching to optimize API usage:
-- Proposals: 5 min cache
-- Treasury: 60 min cache
-- Token price: 2 min cache (with live updates)
-- Solver metrics: 15 min cache
-- Safe balances: 10 min cache
-
-## Custom React Hooks (6 total)
-
-1. `useGovernanceData` - Fetches proposals + space info, calculates metrics
-2. `useTreasuryData` - Combines Dune + Safe data
-3. `useProposalData` - Processes proposals with categories and CIP parsing
-4. `useTokenData` - Token price + holder count with auto-refresh
-5. `useSolverData` - Solver competition metrics from Dune
-6. `useSafeData` - Multi-Safe data aggregation
-
-## Shared UI Components (8 total)
-
-1. `MetricCard` - KPI display with icons, trends
-2. `Badge` - Status indicators (8 variants)
-3. `SectionHeader` - Section titles with subtitles
-4. `LoadingSpinner` - Loading states
-5. `ErrorMessage` - Error handling with retry
-6. `InfoTooltip` - Contextual information
-7. `ChartContainer` - Recharts wrapper
-8. `DataTable` - Sortable tables with real data
-
-## Technical Architecture
-
-### Project Structure
-```
-src/
-├── services/       # 6 API services + caching
-├── hooks/          # 6 custom data hooks
-├── components/
-│   ├── shared/     # 8 reusable components
-│   └── sections/   # 3 dashboard sections
-├── config/         # API configuration
-└── styles/         # Tailwind CSS
-```
-
-### Data Flow
-1. User opens dashboard
-2. Custom hooks fetch data from APIs
-3. Caching layer checks for cached data
-4. Multiple API calls run in parallel
-5. Data processed and displayed in components
-6. Auto-refresh for time-sensitive data (price)
-
-## Validation & Testing
-
-✅ **Build Test**: Successful build with no errors
-✅ **Dev Server Test**: Starts on port 3000
-✅ **Dependencies**: 227 packages installed
-✅ **API Configuration**: All 6 API endpoints configured
-
-## What's Included in the Package
-
-### Configuration Files
-- `package.json` - Dependencies and scripts
-- `vite.config.js` - Vite build configuration
-- `tailwind.config.js` - Tailwind CSS setup
-- `.env` - API keys (with real keys provided by user)
-- `.env.example` - Template for API keys
-
-### Documentation
-- `README.md` - Comprehensive setup guide
-- `START.md` - Quick start instructions
-- `IMPLEMENTATION_SUMMARY.md` - This file
-
-### Source Code
-- 6 API service files (500+ lines)
-- 6 custom React hooks (300+ lines)
-- 8 shared UI components (400+ lines)
-- 3 dashboard sections (800+ lines)
-- Main App component with navigation
-- Global styles with Tailwind
-
-## How to Run
-
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Visit http://localhost:3000
-```
-
-## Real Data Examples You'll See
-
-When you run the dashboard, you'll see **actual live data** such as:
-
-- **Quorum**: 35,000,000 COW (from Snapshot space)
-- **Recent Proposals**: CIP-64, CIP-63 (50.12M votes), CIP-62 (80M COW allocation)
-- **Treasury**: ~$172.5M (from Safe multisigs or Dune)
-- **Token Holders**: ~6,844 on Ethereum (from Etherscan)
-- **COW Price**: Live price from CoinGecko
-- **Max Votes**: 72.28M (from proposal history)
-- **Voting Period**: 7 days + 3 day execution delay
-
-## API Keys Required
-
-✅ Already configured in `.env`:
-- Dune Analytics API key
-- CoinGecko API key
-- Etherscan API key
-
-## Performance Characteristics
-
-- **Initial Load**: 10-15 seconds (parallel API fetches)
-- **Cached Load**: <1 second
-- **Price Refresh**: Every 2 minutes
-- **Build Size**: 627 KB (minified)
-- **Dependencies**: 227 packages
-
-## Production Ready Features
-
-✅ Error handling with user-friendly messages
-✅ Loading states for all data fetches
-✅ Retry functionality on errors
-✅ Responsive design (mobile + desktop)
-✅ Data validation and fallbacks
-✅ TypeScript-ready (can be migrated)
-✅ SEO-friendly HTML structure
-✅ Accessible (ARIA labels)
-
-## What's NOT Mock Data
-
-To be absolutely clear, **EVERYTHING** fetches real data:
-
-❌ NO hardcoded proposal counts
-❌ NO static treasury values
-❌ NO fake vote numbers
-❌ NO placeholder holder counts
-❌ NO mock price data
-❌ NO dummy dates or timestamps
-
-✅ ALL data from public APIs
-✅ ALL metrics calculated from real votes
-✅ ALL charts use actual data
-✅ ALL numbers are live and verifiable
-
-## Verification Instructions
-
-To verify all data is real:
-
-1. **Proposals**: Visit https://snapshot.org/#/cow.eth - compare proposal count and titles
-2. **Votes**: Click any proposal - vote counts match dashboard
-3. **Token Price**: Check https://www.coingecko.com/en/coins/cow-protocol
-4. **Holders**: Check https://etherscan.io/token/0xDEf1CA1fb7FBcDC777520aa7f396b4E015F497aB
-5. **Treasury**: Cross-reference with https://dune.com/cowprotocol
-
-## Future Enhancements (Optional)
-
-The foundation is built to easily add:
-- Section 4: Organizational Structure (Safe multisig explorer)
-- Section 5: Solver Competition (full Dune integration)
-- Section 6: Risk Assessment (concentration metrics)
-- Section 7: DAO Comparison (multi-DAO data)
-- Dark mode toggle
-- Data export (CSV/JSON)
-- Historical trending charts
-- Notification system for new proposals
-
-## Success Metrics
-
-✅ Token holder can assess governance health in <30 seconds
-✅ All data from real APIs with no mock data
-✅ Production-ready build with no errors
-✅ Responsive design works on all devices
-✅ Professional UI with consistent design
-✅ Complete documentation for setup and usage
-✅ Caching optimized for rate limits
-✅ Error handling prevents crashes
-
-## Technologies Used
-
-- **React 18** - Latest React with hooks
-- **Vite 5** - Lightning-fast build tool
-- **Tailwind CSS 3** - Utility-first styling
-- **Recharts 2** - Declarative charts
-- **Axios** - Promise-based HTTP client
-- **Lucide React** - Beautiful icon library
-
-## Deliverables
-
-✅ Fully functional React application
-✅ 100% real data integration
-✅ 3 complete dashboard sections
-✅ 6 API services
-✅ 6 custom hooks
-✅ 8 shared components
-✅ Complete documentation
-✅ Production build tested
-✅ Dev server verified
-✅ All dependencies installed
+**Config Version**: 1.0.0
+**Implementation Date**: October 8, 2024
+**Status**: ✅ Complete
 
 ---
 
-**The CoW DAO Governance Dashboard is ready to use with real, live data! 🎉**
+## Files Created (9 total)
 
-Run `npm run dev` and visit `http://localhost:3000` to see it in action.
+### 1. Query SQL Files
+- `/queries/dune/treasury.sql` - Query ID: 3700123, v1.0
+- `/queries/dune/revenue.sql` - Query ID: 3700123, v1.0
+- `/queries/dune/solverRewards.sql` - Query ID: 5270914, v1.0
+- `/queries/dune/solverInfo.sql` - Query ID: 5533118, v1.0
+- `/queries/README.md` - Documentation
+
+### 2. Configuration Files
+- `/src/config/govConfig.json` - Central configuration (version 1.0.0)
+
+### 3. Service Files
+- `/src/services/queryVersionService.js` - Query version tracking & GitHub sync
+
+### 4. Utility Files
+- `/src/utils/configValidator.js` - Configuration validation
+
+### 5. Component Files
+- `/src/components/modals/ConfigurationModal.jsx` - Config display modal
+
+---
+
+## Files Modified (3 total)
+
+1. `/src/config/apiConfig.js` - Import govConfig, export CONFIG_VERSION
+2. `/src/services/cacheService.js` - Added getStatus() and getStats()
+3. `/src/App.jsx` - Enhanced footer, startup validation, config modal
+
+---
+
+## Key Features Implemented
+
+### ✅ Centralized Configuration (`govConfig.json`)
+- Single source of truth for all configuration
+- Query IDs, versions, and metadata
+- API endpoints and rate limits
+- Cache durations
+- Governance parameters (space, quorum, chains)
+- Feature flags
+
+### ✅ Query Version Tracking
+- SQL files with metadata headers
+- Version tracking per query
+- GitHub sync capability (optional, non-blocking)
+- Version comparison logging
+
+### ✅ Startup Validation
+- Comprehensive configuration validation
+- Environment variable checking
+- Query ID format validation
+- Cache duration validation
+- API endpoint validation
+- Detailed console logging with ✓/✗/⚠ indicators
+
+### ✅ Enhanced Footer
+- Config version badge display
+- Environment indicator
+- Last data refresh timestamp
+- Expandable footer with detailed info:
+  - API endpoints (with hover tooltips)
+  - Dune query IDs
+  - Resource links
+- Configuration button to open modal
+
+### ✅ Configuration Modal
+- 4 tabs: Overview, Queries, Endpoints, Cache
+- Download configuration as JSON
+- Real-time cache status display
+- Query metadata with versions
+- API endpoint details
+
+### ✅ Cache Status Monitoring
+- getCacheStatus() function
+- Real-time cache age tracking
+- Visual progress bars
+- Cache freshness indicators
+
+---
+
+## Console Output Example
+
+```
+========================================
+🔍 Configuration Validation Report
+========================================
+
+Config Version: 1.0.0
+Environment: production
+
+📦 Environment Variables:
+   Required:
+     ✓ VITE_DUNE_API_KEY - Dune Analytics
+     ✓ VITE_ETHERSCAN_API_KEY - Etherscan
+
+🔢 Dune Query IDs:
+   ✓ treasury: ID 3700123 (v1.0)
+   ✓ revenue: ID 3700123 (v1.0)
+   ✓ solverRewards: ID 5270914 (v1.0)
+   ✓ solverInfo: ID 5533118 (v1.0)
+
+⏱  Cache Durations:
+   ✓ proposals: 300s
+   ✓ treasury: 3600s
+   ✓ tokenPrice: 120s
+   ✓ solverMetrics: 900s
+   ✓ safeBalances: 600s
+
+🌐 API Endpoints:
+   ✓ snapshot: https://hub.snapshot.org/graphql
+   ✓ dune: https://api.dune.com/api/v1 [AUTH REQUIRED]
+   ✓ coinGecko: https://api.coingecko.com/api/v3
+   ✓ etherscan: https://api.etherscan.io/api [AUTH REQUIRED]
+   ✓ cowProtocol: https://api.cow.fi/mainnet
+   ✓ safe: https://safe-transaction-mainnet.safe.global
+
+🏛  Governance Configuration:
+   ✓ Space: cow.eth
+   ✓ Quorum: 35,000,000
+   ✓ Chains: mainnet, gnosis, arbitrum
+
+✅ All configuration checks passed!
+```
+
+---
+
+## Configuration Management
+
+### Viewing Configuration
+1. **Footer** - Shows version, environment, last refresh
+2. **Expanded Footer** - Shows all endpoints and query IDs
+3. **Configuration Modal** - Full config with 4 tabs
+
+### Updating Query Versions
+1. Update SQL file in `/queries/dune/[query].sql`
+2. Update version in SQL comment header
+3. Update `/src/config/govConfig.json`
+4. Restart app to see validation
+
+### Monitoring Cache
+- Open Configuration Modal → Cache tab
+- View real-time cache status
+- See age and expiration for each data source
+
+---
+
+## Critical Requirements Met
+
+✅ Query IDs match actual working Dune queries
+✅ Version displayed from real govConfig.json
+✅ GitHub sync is optional (logs if fails, doesn't block)
+✅ Config validation logs results to console on startup
+✅ Footer shows actual API endpoints from config
+✅ Configuration modal displays all settings
+✅ Download config as JSON works
+
+---
+
+## Benefits
+
+1. **Single Source of Truth** - All config in govConfig.json
+2. **Transparency** - Users can view full configuration
+3. **Validation** - Startup checks catch issues early
+4. **Monitoring** - Real-time cache and endpoint status
+5. **Developer Experience** - Clear validation messages
+6. **User Experience** - Config modal for transparency
+
+---
+
+## Documentation
+
+- `/queries/README.md` - Query documentation
+- This file - Implementation summary
+- Console logs - Validation results on startup
+

@@ -6,9 +6,9 @@ import { getCachedTokenPrice } from '../services/cacheService';
 /**
  * Hook to fetch and manage token data from CoinGecko and Etherscan
  */
-export function useTokenData() {
+export function useTokenData(shouldFetch = true) {
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(shouldFetch);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
 
@@ -45,6 +45,8 @@ export function useTokenData() {
   };
 
   useEffect(() => {
+    if (!shouldFetch) return;
+
     fetchData();
 
     // Set up periodic refresh for price data (every 2 minutes)
@@ -63,7 +65,7 @@ export function useTokenData() {
     }, 2 * 60 * 1000); // 2 minutes
 
     return () => clearInterval(interval);
-  }, []);
+  }, [shouldFetch]);
 
   return {
     data,

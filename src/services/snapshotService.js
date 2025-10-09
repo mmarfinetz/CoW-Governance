@@ -36,8 +36,11 @@ export async function fetchProposals(first = 100) {
   `;
 
   try {
+    console.log('[SnapshotService] Fetching from:', SNAPSHOT_API, `(space: ${COW_SPACE}, limit: ${first})`, new Date().toISOString());
     const response = await axios.post(SNAPSHOT_API, { query });
-    return response.data.data.proposals;
+    const proposals = response.data.data.proposals;
+    console.log('[SnapshotService] Received', proposals.length, 'proposals at', new Date().toISOString());
+    return proposals;
   } catch (error) {
     console.error('Error fetching proposals from Snapshot:', error);
     throw error;
@@ -75,6 +78,7 @@ export async function fetchProposal(proposalId) {
   `;
 
   try {
+    console.log('[SnapshotService] Fetching proposal from:', SNAPSHOT_API, `(id: ${proposalId})`, new Date().toISOString());
     const response = await axios.post(SNAPSHOT_API, { query });
     return response.data.data.proposal;
   } catch (error) {
@@ -106,8 +110,11 @@ export async function fetchVotes(proposalId, first = 1000) {
   `;
 
   try {
+    console.log('[SnapshotService] Fetching votes from:', SNAPSHOT_API, `(proposal: ${proposalId}, limit: ${first})`, new Date().toISOString());
     const response = await axios.post(SNAPSHOT_API, { query });
-    return response.data.data.votes;
+    const votes = response.data.data.votes;
+    console.log('[SnapshotService] Received', votes.length, 'votes at', new Date().toISOString());
+    return votes;
   } catch (error) {
     console.error('Error fetching votes from Snapshot:', error);
     throw error;
@@ -149,6 +156,7 @@ export async function fetchSpaceInfo() {
   `;
 
   try {
+    console.log('[SnapshotService] Fetching space info from:', SNAPSHOT_API, `(space: ${COW_SPACE})`, new Date().toISOString());
     const response = await axios.post(SNAPSHOT_API, { query });
     return response.data.data.space;
   } catch (error) {
@@ -158,16 +166,51 @@ export async function fetchSpaceInfo() {
 }
 
 /**
- * Calculate governance metrics from proposals
+ * Fetch voting strategies for a specific proposal
  */
-export function calculateGovernanceMetrics(proposals) {
+export async function fetchVotingStrategies(proposalId) {
+  const query = `
+    query ProposalStrategies {
+      proposal(id: "${proposalId}") {
+        id
+        strategies {
+          name
+          network
+          params
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await axios.post(SNAPSHOT_API, { query });
+    return response.data.data.proposal?.strategies || [];
+  } catch (error) {
+    console.error('Error fetching voting strategies from Snapshot:', error);
+    throw error;
+  }
+}
+
+/**
+ * Calculate governance metrics from proposals
+ * Now includes chain breakdown placeholder (populated by separate service)
+ */
+export function calculateGovernanceMetrics(proposals, chainBreakdown = null) {
   if (!proposals || proposals.length === 0) {
     return {
       totalProposals: 0,
       activeProposals: 0,
       averageParticipation: 0,
       maxVotes: 0,
-      successRate: 0
+      successRate: 0,
+      chainBreakdown: {
+        mainnet: 0,
+        gnosis: 0,
+        arbitrum: 0,
+        base: 0,
+        polygon: 0,
+        unknown: 0
+      }
     };
   }
 
@@ -198,6 +241,14 @@ export function calculateGovernanceMetrics(proposals) {
     activeProposals,
     averageParticipation: avgParticipation,
     maxVotes,
-    successRate
+    successRate,
+    chainBreakdown: chainBreakdown || {
+      mainnet: 0,
+      gnosis: 0,
+      arbitrum: 0,
+      base: 0,
+      polygon: 0,
+      unknown: 0
+    }
   };
 }

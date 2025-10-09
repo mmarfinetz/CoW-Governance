@@ -84,6 +84,68 @@ class CacheService {
     this.set(key, result, duration);
     return result;
   }
+
+  /**
+   * Get cache status for all keys
+   * Returns information about what's cached and how old it is
+   */
+  getStatus() {
+    const status = {};
+
+    // Check standard cache keys
+    const standardKeys = [
+      'proposals',
+      'treasury',
+      'tokenPrice',
+      'solverMetrics',
+      'safeBalances'
+    ];
+
+    for (const key of standardKeys) {
+      const item = this.cache.get(key);
+
+      if (item && Date.now() <= item.expiration) {
+        const age = Date.now() - (item.expiration - CACHE_DURATIONS[key]);
+        status[key] = {
+          cached: true,
+          age,
+          expiresIn: item.expiration - Date.now()
+        };
+      } else {
+        status[key] = {
+          cached: false,
+          age: 0,
+          expiresIn: 0
+        };
+      }
+    }
+
+    return status;
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getStats() {
+    const validEntries = [];
+    const expiredEntries = [];
+
+    this.cache.forEach((item, key) => {
+      if (Date.now() <= item.expiration) {
+        validEntries.push(key);
+      } else {
+        expiredEntries.push(key);
+      }
+    });
+
+    return {
+      total: this.cache.size,
+      valid: validEntries.length,
+      expired: expiredEntries.length,
+      validKeys: validEntries,
+      expiredKeys: expiredEntries
+    };
+  }
 }
 
 // Create singleton instance
@@ -130,6 +192,68 @@ export async function getCachedSafeBalances(fetchFunction) {
     fetchFunction,
     CACHE_DURATIONS.safeBalances
   );
+}
+
+export async function getCachedDelegation(address, fetchFunction) {
+  return cacheService.getOrSet(
+    `delegation_${address.toLowerCase()}`,
+    fetchFunction,
+    CACHE_DURATIONS.delegations
+  );
+}
+
+export async function getCachedDelegationHistory(address, fetchFunction) {
+  return cacheService.getOrSet(
+    `delegationHistory_${address.toLowerCase()}`,
+    fetchFunction,
+    CACHE_DURATIONS.delegations
+  );
+}
+
+export async function getCachedDelegates(fetchFunction) {
+  return cacheService.getOrSet(
+    'recognizedDelegates',
+    fetchFunction,
+    CACHE_DURATIONS.delegates
+  );
+}
+
+export async function getCachedDelegateVotes(address, fetchFunction) {
+  return cacheService.getOrSet(
+    `delegateVotes_${address.toLowerCase()}`,
+    fetchFunction,
+    CACHE_DURATIONS.delegations
+  );
+}
+
+export async function getCachedChainData(proposalId, fetchFunction) {
+  return cacheService.getOrSet(
+    `chainData_${proposalId}`,
+    fetchFunction,
+    CACHE_DURATIONS.chainData
+  );
+}
+
+export async function getCachedChainDistribution(fetchFunction) {
+  return cacheService.getOrSet(
+    'chainDistribution',
+    fetchFunction,
+    CACHE_DURATIONS.chainData
+  );
+}
+
+/**
+ * Export cache status for configuration display
+ */
+export function getCacheStatus() {
+  return cacheService.getStatus();
+}
+
+/**
+ * Export cache statistics
+ */
+export function getCacheStats() {
+  return cacheService.getStats();
 }
 
 export default cacheService;

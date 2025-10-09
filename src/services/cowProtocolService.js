@@ -8,7 +8,9 @@ const BASE_URL = API_CONFIG.cowProtocol.baseUrl;
  */
 export async function fetchApiHealth() {
   try {
-    const response = await axios.get(`${BASE_URL}/api/v1/version`);
+    const url = `${BASE_URL}/api/v1/version`;
+    console.log('[CoWProtocolService] Fetching health from:', url, new Date().toISOString());
+    const response = await axios.get(url);
     return {
       version: response.data.version,
       name: response.data.name,
@@ -28,7 +30,9 @@ export async function fetchApiHealth() {
  */
 export async function fetchTotalSurplus() {
   try {
-    const response = await axios.get(`${BASE_URL}/api/v1/total_surplus`);
+    const url = `${BASE_URL}/api/v1/total_surplus`;
+    console.log('[CoWProtocolService] Fetching surplus from:', url, new Date().toISOString());
+    const response = await axios.get(url);
     return {
       totalSurplus: response.data.total_surplus,
       timestamp: new Date()

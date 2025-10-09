@@ -1,0 +1,105 @@
+{
+  "version": "1.0.0",
+  "environment": "production",
+  "lastUpdated": "2024-10-08",
+  "queries": {
+    "dune": {
+      "treasury": {
+        "id": "3700123",
+        "version": "1.0",
+        "name": "Monthly DAO Revenue & Treasury",
+        "cacheDuration": 3600000,
+        "description": "Monthly revenue aggregation and treasury composition"
+      },
+      "revenue": {
+        "id": "3700123",
+        "version": "1.0",
+        "name": "Monthly Revenue Streams",
+        "cacheDuration": 3600000,
+        "description": "Detailed breakdown of DAO revenue sources"
+      },
+      "solverRewards": {
+        "id": "5270914",
+        "version": "1.0",
+        "name": "Solver Auction Data & Rewards",
+        "cacheDuration": 900000,
+        "description": "Solver competition metrics and rewards"
+      },
+      "solverInfo": {
+        "id": "5533118",
+        "version": "1.0",
+        "name": "Solver Conversion Prices & Metrics",
+        "cacheDuration": 900000,
+        "description": "Solver performance and efficiency metrics"
+      }
+    }
+  },
+  "governance": {
+    "space": "cow.eth",
+    "quorum": 35000000,
+    "votingPeriodDays": 7,
+    "minProposalThreshold": 100000,
+    "chains": ["mainnet", "gnosis", "arbitrum"],
+    "supportedProposalTypes": [
+      "basic",
+      "single-choice",
+      "approval",
+      "ranked-choice",
+      "weighted"
+    ]
+  },
+  "apis": {
+    "snapshot": {
+      "endpoint": "https://hub.snapshot.org/graphql",
+      "rateLimit": 60,
+      "cacheDuration": 300000
+    },
+    "dune": {
+      "baseUrl": "https://api.dune.com/api/v1",
+      "rateLimit": 10,
+      "requiresAuth": true
+    },
+    "coinGecko": {
+      "baseUrl": "https://api.coingecko.com/api/v3",
+      "tokenId": "cow-protocol",
+      "rateLimit": 50,
+      "cacheDuration": 120000
+    },
+    "etherscan": {
+      "baseUrl": "https://api.etherscan.io/api",
+      "cowTokenAddress": "0xDEf1CA1fb7FBcDC777520aa7f396b4E015F497aB",
+      "requiresAuth": true,
+      "cacheDuration": 600000
+    },
+    "cowProtocol": {
+      "baseUrl": "https://api.cow.fi/mainnet",
+      "rateLimit": 100,
+      "cacheDuration": 900000
+    },
+    "safe": {
+      "baseUrl": "https://safe-transaction-mainnet.safe.global",
+      "rateLimit": 60,
+      "cacheDuration": 600000,
+      "solverPayoutsAddress": "0xA03be496e67Ec29bC62F01a428683D7F9c204930"
+    }
+  },
+  "features": {
+    "realTimeUpdates": true,
+    "caching": true,
+    "errorReporting": true,
+    "queryVersionTracking": true,
+    "configurationModal": true
+  },
+  "cache": {
+    "proposals": 300000,
+    "treasury": 3600000,
+    "tokenPrice": 120000,
+    "solverMetrics": 900000,
+    "safeBalances": 600000
+  },
+  "github": {
+    "repo": "cowprotocol/dune-queries",
+    "branch": "main",
+    "queriesPath": "queries"
+  }
+}

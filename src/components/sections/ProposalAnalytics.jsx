@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { SectionHeader } from '../shared/SectionHeader';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
@@ -7,11 +7,31 @@ import { DataTable } from '../shared/DataTable';
 import { Badge } from '../shared/Badge';
 import { ChartContainer } from '../shared/ChartContainer';
 import { useProposalData } from '../../hooks/useProposalData';
+import { useTimeRange } from '../../contexts/TimeRangeContext';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 export function ProposalAnalytics() {
-  const { proposals, loading, error, refetch } = useProposalData();
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Only fetch data when component becomes visible
+  const { proposals, loading, error, refetch } = useProposalData(isVisible);
+  const { getFormattedRange } = useTimeRange();
+
+  // Set visibility when component mounts
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
+  // Show loading placeholder if data not yet loaded
+  if (!isVisible || (!proposals.length && !error)) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader title="Proposal Analytics" />
+        <LoadingSpinner message="Initializing proposal analytics..." />
+      </div>
+    );
+  }
 
   // Process data for charts
   const { timelineData, categoryData, recentProposals } = useMemo(() => {
@@ -71,6 +91,8 @@ export function ProposalAnalytics() {
     );
   }
 
+  const hasData = proposals && proposals.length > 0;
+
   const columns = [
     {
       key: 'title',
@@ -115,11 +137,26 @@ export function ProposalAnalytics() {
     <div className="space-y-6">
       <SectionHeader
         title="Proposal Activity & Voting Trends"
-        subtitle={`Analysis of ${proposals.length} CoW DAO proposals`}
+        subtitle={hasData ? `Analysis of ${proposals.length} CoW DAO proposals` : 'Proposal analytics and voting trends'}
       />
 
+      {/* Date Range Subtitle */}
+      <div className="text-sm text-gray-600 -mt-3 mb-2">
+        Showing data from <span className="font-semibold">{getFormattedRange()}</span>
+      </div>
+
+      {/* Empty State */}
+      {!hasData && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <p className="text-yellow-800 text-center">
+            No proposal data found for the selected time period. Try selecting a different date range.
+          </p>
+        </div>
+      )}
+
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {hasData && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Timeline Chart */}
         <ChartContainer
           title="Proposal Timeline"
@@ -162,10 +199,12 @@ export function ProposalAnalytics() {
             </PieChart>
           </ResponsiveContainer>
         </ChartContainer>
-      </div>
+        </div>
+      )}
 
       {/* Voting Participation Chart */}
-      <ChartContainer
+      {hasData && (
+        <ChartContainer
         title="Voting Participation"
         subtitle="Vote counts vs quorum requirement (35M)"
       >
@@ -200,17 +239,20 @@ export function ProposalAnalytics() {
             />
           </LineChart>
         </ResponsiveContainer>
-      </ChartContainer>
+        </ChartContainer>
+      )}
 
       {/* Recent Proposals Table */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Proposals</h3>
-        <DataTable
-          columns={columns}
-          data={recentProposals}
-          defaultSortKey="created"
-        />
-      </div>
+      {hasData && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Proposals</h3>
+          <DataTable
+            columns={columns}
+            data={recentProposals}
+            defaultSortKey="created"
+          />
+        </div>
+      )}
     </div>
   );
 }

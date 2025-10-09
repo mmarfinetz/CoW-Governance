@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
 import { fetchProposals, fetchVotes } from '../services/snapshotService';
 import { getCachedProposals } from '../services/cacheService';
+import { useTimeRange } from '../contexts/TimeRangeContext';
 
 /**
  * Hook to fetch detailed proposal data
  */
-export function useProposalData() {
+export function useProposalData(shouldFetch = true) {
   const [proposals, setProposals] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(shouldFetch);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+
+  const { filterByTimeRange } = useTimeRange();
 
   const fetchData = async () => {
     try {
@@ -55,7 +58,10 @@ export function useProposalData() {
         };
       });
 
-      setProposals(processedProposals);
+      // Filter proposals by selected time range
+      const filteredProposals = filterByTimeRange(processedProposals, 'created');
+
+      setProposals(filteredProposals);
       setLastUpdated(new Date());
     } catch (err) {
       console.error('Error fetching proposal data:', err);
@@ -66,8 +72,10 @@ export function useProposalData() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (shouldFetch) {
+      fetchData();
+    }
+  }, [shouldFetch, filterByTimeRange]);
 
   // Helper function to fetch votes for a specific proposal
   const fetchProposalVotes = async (proposalId) => {

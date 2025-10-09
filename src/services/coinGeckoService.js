@@ -18,8 +18,10 @@ const getHeaders = () => {
  */
 export async function fetchTokenData() {
   try {
+    const url = `${BASE_URL}/coins/${TOKEN_ID}`;
+    console.log('[CoinGeckoService] Fetching token data from:', url, `(token: ${TOKEN_ID})`, new Date().toISOString());
     const response = await axios.get(
-      `${BASE_URL}/coins/${TOKEN_ID}`,
+      url,
       {
         params: {
           localization: false,
@@ -66,8 +68,10 @@ export async function fetchTokenData() {
  */
 export async function fetchSimplePrice() {
   try {
+    const url = `${BASE_URL}/simple/price`;
+    console.log('[CoinGeckoService] Fetching simple price from:', url, `(token: ${TOKEN_ID})`, new Date().toISOString());
     const response = await axios.get(
-      `${BASE_URL}/simple/price`,
+      url,
       {
         params: {
           ids: TOKEN_ID,

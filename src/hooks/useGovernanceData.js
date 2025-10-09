@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchProposals, fetchSpaceInfo, calculateGovernanceMetrics } from '../services/snapshotService';
 import { getCachedProposals } from '../services/cacheService';
+import { useTimeRange } from '../contexts/TimeRangeContext';
 
 /**
  * Hook to fetch and manage governance data from Snapshot
@@ -10,6 +11,8 @@ export function useGovernanceData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+
+  const { filterByTimeRange } = useTimeRange();
 
   const fetchData = async () => {
     try {
@@ -21,10 +24,15 @@ export function useGovernanceData() {
         fetchSpaceInfo()
       ]);
 
-      const metrics = calculateGovernanceMetrics(proposals);
+      // Filter proposals by selected time range
+      const filteredProposals = filterByTimeRange(proposals, 'created');
+
+      // Calculate metrics on filtered proposals
+      const metrics = calculateGovernanceMetrics(filteredProposals);
 
       setData({
-        proposals,
+        proposals: filteredProposals,
+        allProposals: proposals, // Keep unfiltered for reference
         spaceInfo,
         metrics,
         quorum: spaceInfo.voting?.quorum || 35000000,
@@ -43,7 +51,7 @@ export function useGovernanceData() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [filterByTimeRange]);
 
   return {
     data,

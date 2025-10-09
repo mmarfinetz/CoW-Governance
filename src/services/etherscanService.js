@@ -10,6 +10,8 @@ const COW_TOKEN_ADDRESS = API_CONFIG.etherscan.cowTokenAddress;
  */
 export async function fetchTokenHolderCount() {
   try {
+    const url = `${BASE_URL}?module=token&action=tokenholdercount&contractaddress=${COW_TOKEN_ADDRESS}`;
+    console.log('[EtherscanService] Fetching holder count from:', url, new Date().toISOString());
     const response = await axios.get(BASE_URL, {
       params: {
         module: 'token',
@@ -20,7 +22,9 @@ export async function fetchTokenHolderCount() {
     });
 
     if (response.data.status === '1') {
-      return parseInt(response.data.result);
+      const count = parseInt(response.data.result);
+      console.log('[EtherscanService] Token holder count:', count, new Date().toISOString());
+      return count;
     }
     throw new Error(response.data.message || 'Failed to fetch holder count');
   } catch (error) {

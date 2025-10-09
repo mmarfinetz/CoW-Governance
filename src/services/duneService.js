@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { API_CONFIG } from '../config/apiConfig';
+import { duneRateLimiter } from '../utils/rateLimiter';
+import { retryWithBackoff, isRateLimitError } from '../utils/retryUtils';
 
 const BASE_URL = API_CONFIG.dune.baseUrl;
 const API_KEY = API_CONFIG.dune.apiKey;
@@ -11,17 +13,24 @@ const getHeaders = () => ({
 });
 
 /**
- * Execute a Dune query
+ * Execute a Dune query with rate limiting and retry logic
  */
 export async function executeQuery(queryId, parameters = {}) {
   try {
-    const response = await axios.post(
-      `${BASE_URL}/query/${queryId}/execute`,
-      { query_parameters: parameters },
-      { headers: getHeaders() }
-    );
+    const url = `${BASE_URL}/query/${queryId}/execute`;
+    console.log('[DuneService] Executing query at:', url, `(queryId: ${queryId})`, new Date().toISOString());
 
-    return response.data.execution_id;
+    // Use rate limiter before making the request
+    return await duneRateLimiter.execute(async () => {
+      return await retryWithBackoff(async () => {
+        const response = await axios.post(
+          url,
+          { query_parameters: parameters },
+          { headers: getHeaders() }
+        );
+        return response.data.execution_id;
+      }, 3, 2000, 15000); // Retry rate-limited calls with longer backoff
+    });
   } catch (error) {
     console.error(`Error executing Dune query ${queryId}:`, error);
     throw error;
@@ -29,16 +38,19 @@ export async function executeQuery(queryId, parameters = {}) {
 }
 
 /**
- * Get query execution status
+ * Get query execution status with rate limiting and retry logic
  */
 export async function getExecutionStatus(executionId) {
   try {
-    const response = await axios.get(
-      `${BASE_URL}/execution/${executionId}/status`,
-      { headers: getHeaders() }
-    );
-
-    return response.data;
+    return await duneRateLimiter.execute(async () => {
+      return await retryWithBackoff(async () => {
+        const response = await axios.get(
+          `${BASE_URL}/execution/${executionId}/status`,
+          { headers: getHeaders() }
+        );
+        return response.data;
+      }, 3, 2000, 15000);
+    });
   } catch (error) {
     console.error(`Error getting execution status for ${executionId}:`, error);
     throw error;
@@ -46,16 +58,25 @@ export async function getExecutionStatus(executionId) {
 }
 
 /**
- * Get query results
+ * Get query results with rate limiting and retry logic
  */
 export async function getQueryResults(queryId) {
   try {
-    const response = await axios.get(
-      `${BASE_URL}/query/${queryId}/results`,
-      { headers: getHeaders() }
-    );
+    const url = `${BASE_URL}/query/${queryId}/results`;
+    console.log('[DuneService] Fetching results from:', url, `(queryId: ${queryId})`, new Date().toISOString());
 
-    return response.data.result.rows;
+    return await duneRateLimiter.execute(async () => {
+      return await retryWithBackoff(async () => {
+        const response = await axios.get(
+          url,
+          { headers: getHeaders() }
+        );
+
+        const rows = response.data.result.rows;
+        console.log('[DuneService] Received', rows.length, 'rows at', new Date().toISOString());
+        return rows;
+      }, 1, 1000, 2000); // Reduced retries: 1 attempt, shorter backoff for faster failures
+    });
   } catch (error) {
     console.error(`Error getting results for query ${queryId}:`, error);
     throw error;
@@ -167,6 +188,11 @@ export async function fetchSolverRewardsData() {
       timestamp: new Date()
     };
   } catch (error) {
+    // Handle datapoint limit errors gracefully
+    if (error.message && error.message.includes('datapoint limit')) {
+      console.warn('⚠️ Dune datapoint limit reached for solver rewards query. Skipping this data.');
+      return { totalRewards: 0, solvers: [], timestamp: new Date() };
+    }
     console.error('Error fetching solver rewards from Dune:', error);
     throw error;
   }
@@ -193,34 +219,52 @@ export async function fetchSolverInfoData() {
       timestamp: new Date()
     };
   } catch (error) {
+    // Handle query not found or datapoint limit errors
+    if (error.message && (error.message.includes('not found') || error.message.includes('datapoint limit'))) {
+      console.warn('⚠️ Dune solver info query unavailable (not found or datapoint limit). Skipping this data.');
+      return { activeSolvers: 0, solverMetrics: [], timestamp: new Date() };
+    }
     console.error('Error fetching solver info from Dune:', error);
     throw error;
   }
 }
 
 /**
- * Fetch all Dune data in parallel
+ * Fetch all Dune data sequentially to respect rate limits
  */
 export async function fetchAllDuneData() {
   try {
-    const [treasury, revenue, solverRewards, solverInfo] = await Promise.all([
-      fetchTreasuryData().catch(err => {
-        console.error('Failed to fetch treasury:', err);
-        return { totalValue: 0, composition: [], timestamp: new Date() };
-      }),
-      fetchRevenueData().catch(err => {
-        console.error('Failed to fetch revenue:', err);
-        return { totalRevenue: 0, revenueByType: [], timestamp: new Date() };
-      }),
-      fetchSolverRewardsData().catch(err => {
-        console.error('Failed to fetch solver rewards:', err);
-        return { totalRewards: 0, solvers: [], timestamp: new Date() };
-      }),
-      fetchSolverInfoData().catch(err => {
-        console.error('Failed to fetch solver info:', err);
-        return { activeSolvers: 0, solverMetrics: [], timestamp: new Date() };
-      })
-    ]);
+    console.log('[DuneService] Starting sequential fetch of all Dune data...');
+
+    // Execute queries sequentially to avoid rate limiting
+    const treasury = await fetchTreasuryData().catch(err => {
+      console.error('Failed to fetch treasury:', err);
+      return { totalValue: 0, composition: [], timestamp: new Date() };
+    });
+
+    // Add a small delay between requests to be extra safe
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const revenue = await fetchRevenueData().catch(err => {
+      console.error('Failed to fetch revenue:', err);
+      return { totalRevenue: 0, revenueByType: [], timestamp: new Date() };
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const solverRewards = await fetchSolverRewardsData().catch(err => {
+      console.warn('Solver rewards data unavailable (likely datapoint limit or query issue). Dashboard will work without it.');
+      return { totalRewards: 0, solvers: [], timestamp: new Date() };
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const solverInfo = await fetchSolverInfoData().catch(err => {
+      console.warn('Solver info data unavailable (likely query not found or datapoint limit). Dashboard will work without it.');
+      return { activeSolvers: 0, solverMetrics: [], timestamp: new Date() };
+    });
+
+    console.log('[DuneService] Completed fetching all Dune data');
 
     return {
       treasury,

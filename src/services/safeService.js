@@ -9,7 +9,9 @@ const SAFE_ADDRESSES = API_CONFIG.safe.addresses;
  */
 export async function fetchSafeInfo(safeAddress) {
   try {
-    const response = await axios.get(`${BASE_URL}/api/v1/safes/${safeAddress}/`);
+    const url = `${BASE_URL}/api/v1/safes/${safeAddress}/`;
+    console.log('[SafeService] Fetching Safe info from:', url, new Date().toISOString());
+    const response = await axios.get(url);
     return {
       address: response.data.address,
       nonce: response.data.nonce,
@@ -32,7 +34,9 @@ export async function fetchSafeInfo(safeAddress) {
  */
 export async function fetchSafeBalances(safeAddress) {
   try {
-    const response = await axios.get(`${BASE_URL}/api/v1/safes/${safeAddress}/balances/`);
+    const url = `${BASE_URL}/api/v1/safes/${safeAddress}/balances/`;
+    console.log('[SafeService] Fetching balances from:', url, new Date().toISOString());
+    const response = await axios.get(url);
     return response.data.map(balance => ({
       tokenAddress: balance.tokenAddress,
       token: balance.token,

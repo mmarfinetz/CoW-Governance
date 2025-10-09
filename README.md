@@ -43,7 +43,7 @@ All data is fetched from real, public APIs:
    - Protocol health metrics
    - Solver competition data
 
-## Setup Instructions
+## 🚀 Quick Start
 
 ### 1. Install Dependencies
 
@@ -51,32 +51,38 @@ All data is fetched from real, public APIs:
 npm install
 ```
 
-### 2. Configure Environment Variables
+### 2. **IMPORTANT**: Configure API Keys
 
-Copy the `.env.example` file to `.env` and add your API keys:
+**To see data in the dashboard, you MUST add at least a Dune API key:**
 
 ```bash
+# Create your .env file (already exists if you just cloned)
 cp .env.example .env
+
+# Edit the .env file and add your Dune API key:
+# nano .env  (or use any text editor)
 ```
 
-Edit `.env` and add your API keys:
+**Required API Keys:**
+
+| Service | Required? | Get Key From | Free Tier |
+|---------|-----------|--------------|-----------|
+| **Dune Analytics** | ✅ **REQUIRED** | https://dune.com/settings/api | 20 executions/day |
+| CoinGecko | Optional | https://www.coingecko.com/en/api/pricing | Works without key |
+| Etherscan | Optional | https://etherscan.io/myapikey | 5 calls/second |
+
+**Your `.env` file should look like:**
 
 ```env
-# Dune Analytics API (required for full treasury data)
-VITE_DUNE_API_KEY=your_dune_api_key_here
+# REQUIRED - Without this, Treasury/Revenue/Solver data won't load
+VITE_DUNE_API_KEY=your_actual_dune_key_here
 
-# Etherscan API (required for holder count)
-VITE_ETHERSCAN_API_KEY=your_etherscan_api_key_here
-
-# CoinGecko API (optional, free tier works)
-VITE_COINGECKO_API_KEY=your_coingecko_api_key_here
+# OPTIONAL
+VITE_COINGECKO_API_KEY=
+VITE_ETHERSCAN_API_KEY=
 ```
 
-**Getting API Keys:**
-
-- **Dune Analytics**: Sign up at https://dune.com and get an API key (starts at $39/mo)
-- **Etherscan**: Free API key at https://etherscan.io/apis
-- **CoinGecko**: Free tier available at https://www.coingecko.com/en/api
+> 📖 **See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for detailed instructions on getting API keys**
 
 ### 3. Run Development Server
 
@@ -84,9 +90,18 @@ VITE_COINGECKO_API_KEY=your_coingecko_api_key_here
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000`
+The app will be available at **http://localhost:3000**
 
-### 4. Build for Production
+### 4. Verify Data is Loading
+
+Open your browser console (F12) and you should see:
+- ✅ `[SnapshotService] Received X proposals` 
+- ✅ `[DuneService] Received X rows`
+- ✅ Data appearing in the dashboard tabs
+
+**If no data loads:** Check [SETUP_GUIDE.md](./SETUP_GUIDE.md) for troubleshooting
+
+### 5. Build for Production
 
 ```bash
 npm run build

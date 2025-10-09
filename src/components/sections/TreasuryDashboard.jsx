@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { DollarSign, TrendingUp, Wallet } from 'lucide-react';
 import { SectionHeader } from '../shared/SectionHeader';
@@ -12,8 +12,16 @@ import { useTokenData } from '../../hooks/useTokenData';
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6'];
 
 export function TreasuryDashboard() {
-  const { data: treasuryData, loading, error, refetch } = useTreasuryData();
-  const { data: tokenData } = useTokenData();
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Only fetch data when component becomes visible
+  const { data: treasuryData, loading, error, refetch } = useTreasuryData(isVisible);
+  const { data: tokenData } = useTokenData(isVisible);
+
+  // Set visibility when component mounts
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
 
   const compositionData = useMemo(() => {
     if (!treasuryData?.composition) return [];
@@ -25,6 +33,16 @@ export function TreasuryDashboard() {
       { name: 'Other Tokens', value: treasuryData.composition.other || 0 }
     ].filter(item => item.value > 0);
   }, [treasuryData]);
+
+  // Show loading placeholder if data not yet loaded
+  if (!isVisible || (!treasuryData && !error)) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader title="Treasury & Economic Model" />
+        <LoadingSpinner message="Initializing treasury dashboard..." />
+      </div>
+    );
+  }
 
   const budgetData = [
     { name: 'Treasury Core (CIP-62)', amount: 80000000, type: 'COW' },
