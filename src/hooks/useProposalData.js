@@ -46,15 +46,19 @@ export function useProposalData(shouldFetch = true) {
           category = 'Slashing';
         }
 
+        // Calculate pass/fail status safely
+        let passed = false;
+        if (proposal.state === 'closed' && proposal.scores && proposal.scores.length > 0) {
+          const maxScore = Math.max(...proposal.scores);
+          const otherScores = proposal.scores_total - maxScore;
+          passed = proposal.scores_total >= (proposal.quorum || 0) && maxScore > otherScores;
+        }
+
         return {
           ...proposal,
           cipNumber,
           category,
-          // Calculate pass/fail status
-          passed: proposal.state === 'closed' &&
-                  proposal.scores_total >= (proposal.quorum || 0) &&
-                  proposal.scores &&
-                  Math.max(...proposal.scores) > (proposal.scores_total - Math.max(...proposal.scores))
+          passed
         };
       });
 

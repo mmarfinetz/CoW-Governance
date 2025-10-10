@@ -42,6 +42,7 @@ export function ProposalAnalytics() {
     // Timeline data - group by month
     const timelineMap = {};
     proposals.forEach(p => {
+      if (!p.created) return; // Skip proposals without created date
       const date = new Date(p.created * 1000);
       const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       timelineMap[month] = (timelineMap[month] || 0) + 1;
@@ -55,7 +56,8 @@ export function ProposalAnalytics() {
     // Category breakdown
     const categoryMap = {};
     proposals.forEach(p => {
-      categoryMap[p.category] = (categoryMap[p.category] || 0) + 1;
+      const category = p.category || 'Other';
+      categoryMap[category] = (categoryMap[category] || 0) + 1;
     });
 
     const categories = Object.entries(categoryMap).map(([name, value]) => ({
@@ -108,7 +110,10 @@ export function ProposalAnalytics() {
     {
       key: 'scores_total',
       label: 'Votes',
-      render: (value) => value ? `${(value / 1000000).toFixed(2)}M` : '0'
+      render: (value) => {
+        if (!value || value === 0) return '0';
+        return `${(value / 1000000).toFixed(2)}M`;
+      }
     },
     {
       key: 'state',
@@ -129,7 +134,10 @@ export function ProposalAnalytics() {
     {
       key: 'created',
       label: 'Date',
-      render: (value) => new Date(value * 1000).toLocaleDateString()
+      render: (value) => {
+        if (!value) return 'N/A';
+        return new Date(value * 1000).toLocaleDateString();
+      }
     }
   ];
 
@@ -158,52 +166,56 @@ export function ProposalAnalytics() {
       {hasData && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Timeline Chart */}
-        <ChartContainer
-          title="Proposal Timeline"
-          subtitle="Proposals submitted over time"
-        >
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={timelineData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="proposals" fill="#3B82F6" name="Proposals" />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartContainer>
+        {timelineData.length > 0 && (
+          <ChartContainer
+            title="Proposal Timeline"
+            subtitle="Proposals submitted over time"
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={timelineData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="proposals" fill="#3B82F6" name="Proposals" />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        )}
 
         {/* Category Breakdown */}
-        <ChartContainer
-          title="Proposals by Category"
-          subtitle="Distribution across proposal types"
-        >
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={categoryData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {categoryData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartContainer>
+        {categoryData.length > 0 && (
+          <ChartContainer
+            title="Proposals by Category"
+            subtitle="Distribution across proposal types"
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={categoryData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {categoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        )}
         </div>
       )}
 
       {/* Voting Participation Chart */}
-      {hasData && (
+      {hasData && recentProposals.length > 0 && (
         <ChartContainer
         title="Voting Participation"
         subtitle="Vote counts vs quorum requirement (35M)"
