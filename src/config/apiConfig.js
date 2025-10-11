@@ -5,6 +5,7 @@ export const CONFIG_VERSION = govConfig.version;
 
 // Debug: Log environment variables on load
 console.log('[API Config] Loading environment variables...');
+console.log('[API Config] VITE_GRAPH_API_KEY exists:', !!import.meta.env.VITE_GRAPH_API_KEY);
 console.log('[API Config] VITE_DUNE_API_KEY exists:', !!import.meta.env.VITE_DUNE_API_KEY);
 console.log('[API Config] VITE_COINGECKO_API_KEY exists:', !!import.meta.env.VITE_COINGECKO_API_KEY);
 console.log('[API Config] VITE_ETHERSCAN_API_KEY exists:', !!import.meta.env.VITE_ETHERSCAN_API_KEY);
@@ -39,6 +40,13 @@ export const API_CONFIG = {
   },
   cowProtocol: {
     baseUrl: import.meta.env.VITE_COW_API_BASE || govConfig.apis.cowProtocol.baseUrl
+  },
+  theGraph: {
+    apiKey: import.meta.env.VITE_GRAPH_API_KEY,
+    gateway: 'https://gateway-arbitrum.network.thegraph.com',
+    subgraphs: {
+      cowMainnet: '8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD'
+    }
   },
   safe: {
     baseUrl: import.meta.env.VITE_SAFE_API_BASE || govConfig.apis.safe.baseUrl,

@@ -1,8 +1,13 @@
 import axios from 'axios';
+import { API_CONFIG } from '../config/apiConfig';
 
 /**
  * CoW Protocol Subgraph Service
  * Using The Graph's Decentralized Network (NOT the deprecated hosted service)
+ * 
+ * REQUIRES: VITE_GRAPH_API_KEY in .env file
+ * Get your free API key at: https://thegraph.com/studio/apikeys/
+ * Free tier: 100,000 queries/month
  * 
  * Subgraph IDs from CoW Protocol GitHub repo:
  * - Mainnet: 8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD
@@ -15,26 +20,32 @@ import axios from 'axios';
  * - Grant: https://forum.cow.fi/t/grant-application-retroactive-redeploy-cow-subgraph/2627
  */
 
-// The Graph's decentralized network query endpoints
-// These are public and don't require API keys for queries
-const SUBGRAPH_URLS = {
-  // Mainnet - using public gateway
-  mainnet: 'https://gateway-arbitrum.network.thegraph.com/api/subgraphs/id/8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD',
-  // Alternative: Use the decentralized endpoint (may require API key for high volume)
-  // mainnet: 'https://api.studio.thegraph.com/query/60326/cow-mainnet/version/latest'
-};
+const GRAPH_API_KEY = API_CONFIG.theGraph?.apiKey;
+const GRAPH_GATEWAY = API_CONFIG.theGraph?.gateway || 'https://gateway-arbitrum.network.thegraph.com';
+const SUBGRAPH_ID = API_CONFIG.theGraph?.subgraphs?.cowMainnet || '8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD';
+
+/**
+ * Get the subgraph URL with API key
+ */
+function getSubgraphUrl() {
+  if (!GRAPH_API_KEY) {
+    console.warn('[SubgraphService] No Graph API key found. Set VITE_GRAPH_API_KEY in .env');
+    return null;
+  }
+  return `${GRAPH_GATEWAY}/api/${GRAPH_API_KEY}/subgraphs/id/${SUBGRAPH_ID}`;
+}
 
 /**
  * Execute a GraphQL query against the CoW Protocol subgraph
  */
 async function querySubgraph(query, variables = {}, network = 'mainnet') {
   try {
-    const url = SUBGRAPH_URLS[network];
+    const url = getSubgraphUrl();
     if (!url) {
-      throw new Error(`Subgraph URL not configured for network: ${network}`);
+      throw new Error('Graph API key not configured. Add VITE_GRAPH_API_KEY to your .env file. Get a free key at https://thegraph.com/studio/apikeys/');
     }
 
-    console.log(`[SubgraphService] Querying ${network} subgraph via decentralized network`);
+    console.log(`[SubgraphService] Querying ${network} subgraph via The Graph decentralized network`);
 
     const response = await axios.post(url, {
       query,

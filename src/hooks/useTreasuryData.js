@@ -18,7 +18,7 @@ export function useTreasuryData(shouldFetch = true) {
       setLoading(true);
       setError(null);
 
-      console.log('[TreasuryData] Fetching from Subgraph (decentralized network) and Safe APIs...');
+      console.log('[TreasuryData] Fetching from Subgraph (The Graph) and Safe APIs...');
 
       // Fetch from both Subgraph and Safe APIs - allow partial failures
       const [subgraphData, safeData] = await Promise.all([
@@ -42,7 +42,7 @@ export function useTreasuryData(shouldFetch = true) {
       
       if (!hasAnyData) {
         console.warn('[TreasuryData] No data available from Subgraph or Safe');
-        setError('No treasury data available. Both Safe API and Subgraph returned no data.');
+        setError('No treasury data available. Please check that VITE_GRAPH_API_KEY is set in your .env file.');
         setData(null);
         setLastUpdated(new Date());
         return;

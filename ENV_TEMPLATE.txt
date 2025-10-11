@@ -1,11 +1,29 @@
 # Copy this to .env in the root directory
 # File name should be: .env (not .env.txt)
 
-VITE_DUNE_API_KEY=your_dune_api_key_here
-VITE_COINGECKO_API_KEY=
-VITE_ETHERSCAN_API_KEY=
+# ============================================
+# REQUIRED FOR FULL DASHBOARD
+# ============================================
 
-# Get Dune API key at: https://dune.com/settings/api
-# Get CoinGecko key at: https://www.coingecko.com/en/api/pricing (optional)
-# Get Etherscan key at: https://etherscan.io/myapikey (optional)
+# The Graph API Key (REQUIRED for protocol metrics - volume, fees, tokens, solvers)
+# Get yours at: https://thegraph.com/studio/apikeys/
+# Free tier: 100,000 queries/month
+VITE_GRAPH_API_KEY=
+
+# ============================================
+# OPTIONAL API KEYS
+# ============================================
+
+# Dune Analytics (optional - now replaced by subgraph)
+VITE_DUNE_API_KEY=
+
+# CoinGecko API Key (OPTIONAL - nice to have for token price)
+# Get yours at: https://www.coingecko.com/en/api/pricing
+# Free tier works without key
+VITE_COINGECKO_API_KEY=
+
+# Etherscan API Key (OPTIONAL - nice to have for holder count)
+# Get yours at: https://etherscan.io/myapikey
+# Free tier: 5 calls/second
+VITE_ETHERSCAN_API_KEY=
 
