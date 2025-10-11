@@ -73,10 +73,11 @@ export function TreasuryDashboard() {
               <div className="space-y-2 text-sm text-red-700">
                 <p className="font-semibold">The Dune queries may be private or inaccessible:</p>
                 <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>The queries (IDs: 3700123, 5270914, 5533118) may be private</li>
-                  <li>You can create your own public queries on Dune</li>
-                  <li>Or fork the queries from: <a href="https://dune.com/cowprotocol" target="_blank" rel="noopener noreferrer" className="underline font-medium">dune.com/cowprotocol</a></li>
-                  <li>Then update the query IDs in <code className="bg-red-100 px-1 rounded">src/config/govConfig.json</code></li>
+                  <li>Query IDs in use: Treasury (3700123), Revenue (3700123), Solver Rewards (5270914), Solver Info (5533118)</li>
+                  <li>These queries may be private or deleted</li>
+                  <li>Fork public queries from: <a href="https://dune.com/cowprotocol" target="_blank" rel="noopener noreferrer" className="underline font-medium">dune.com/cowprotocol</a></li>
+                  <li>Update query IDs in <code className="bg-red-100 px-1 rounded">src/config/govConfig.json</code></li>
+                  <li>See the official CoW queries repo: <a href="https://github.com/cowprotocol/dune-queries" target="_blank" rel="noopener noreferrer" className="underline font-medium">github.com/cowprotocol/dune-queries</a></li>
                 </ul>
               </div>
             )}
@@ -113,37 +114,39 @@ export function TreasuryDashboard() {
     return (
       <div className="space-y-6">
         <SectionHeader title="Treasury & Economic Model" />
-        <LoadingSpinner message="Loading treasury data from Safe and Dune APIs..." />
+        <LoadingSpinner message="Loading treasury data from Dune Analytics, Safe, and The Graph APIs..." />
       </div>
     );
   }
 
-  // If no data, show message - NO FALLBACK
-  if (!treasuryData?.totalValue && !error) {
+  // If no protocol data at all, show setup message
+  if (!treasuryData && !error) {
     const hasDuneKey = !!import.meta.env.VITE_DUNE_API_KEY;
-    
+
     return (
       <div className="space-y-6">
         <SectionHeader title="Treasury & Economic Model" />
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 space-y-4">
           <div>
-            <h3 className="text-lg font-semibold text-yellow-900 mb-2">⚠️ No Treasury Data Available</h3>
+            <h3 className="text-lg font-semibold text-yellow-900 mb-2">⚠️ No Protocol Data Available</h3>
             {!hasDuneKey ? (
               <div className="space-y-2">
                 <p className="text-yellow-800 font-medium">Missing Dune Analytics API Key</p>
                 <p className="text-yellow-700 text-sm">
-                  To view treasury data, you need to add your Dune API key:
+                  To view protocol revenue and metrics, you need to add your Dune API key:
                 </p>
                 <ol className="list-decimal list-inside text-sm text-yellow-700 space-y-1 ml-2">
                   <li>Get a free API key at <a href="https://dune.com/settings/api" target="_blank" rel="noopener noreferrer" className="underline font-medium">dune.com/settings/api</a></li>
-                  <li>Create a <code className="bg-yellow-100 px-1 rounded">.env</code> file in the project root (see <code className="bg-yellow-100 px-1 rounded">ENV_TEMPLATE.txt</code>)</li>
-                  <li>Add: <code className="bg-yellow-100 px-1 rounded">VITE_DUNE_API_KEY=your_key_here</code></li>
+                  <li>Add to <code className="bg-yellow-100 px-1 rounded">.env</code> file: <code className="bg-yellow-100 px-1 rounded">VITE_DUNE_API_KEY=your_key_here</code></li>
                   <li>Restart the dev server: <code className="bg-yellow-100 px-1 rounded">npm run dev</code></li>
                 </ol>
+                <p className="text-yellow-700 text-sm mt-2">
+                  Free tier: 20 query executions per day. See <a href="https://docs.dune.com/api-reference/" target="_blank" rel="noopener noreferrer" className="underline">Dune API docs</a> for details.
+                </p>
               </div>
             ) : (
               <p className="text-yellow-800">
-                Dune API key is configured but no data was returned. Check the browser console for error details.
+                Dune API key is configured but no data was returned. Check the browser console (Cmd+Option+J) for error details. Look for errors in duneService.js or the network tab for failed API requests.
               </p>
             )}
           </div>
@@ -155,22 +158,36 @@ export function TreasuryDashboard() {
   const totalValue = treasuryData?.totalValue || 0;
   const cowPrice = tokenData?.price || 0;
 
+  // Note: totalValue may be $0 if Safe API doesn't provide USD pricing
+  const showTreasuryWarning = totalValue === 0 && treasuryData;
+
   return (
     <div className="space-y-6">
       <SectionHeader
         title="Treasury & Economic Model"
-        subtitle={`Total treasury value: $${(totalValue / 1000000).toFixed(1)}M • Data source: ${treasuryData?.source || 'Safe + Dune'}`}
+        subtitle={totalValue > 0 ? `Total treasury value: $${(totalValue / 1000000).toFixed(1)}M • Data source: ${treasuryData?.source || 'Safe + Dune'}` : `Showing protocol metrics • Data source: ${treasuryData?.source || 'Dune + The Graph'}`}
       />
+
+      {showTreasuryWarning && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-800">
+            <strong>Note:</strong> Treasury USD value is not displayed because the Safe API does not provide token pricing data.
+            Protocol revenue and metrics are shown from Dune Analytics and The Graph.
+          </p>
+        </div>
+      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <MetricCard
-          title="Total Treasury"
-          value={`$${(totalValue / 1000000).toFixed(1)}M`}
-          subtitle="Across all Safes"
-          icon={DollarSign}
-          color="green"
-        />
+        {totalValue > 0 && (
+          <MetricCard
+            title="Total Treasury"
+            value={`$${(totalValue / 1000000).toFixed(1)}M`}
+            subtitle="Across all Safes"
+            icon={DollarSign}
+            color="green"
+          />
+        )}
         <MetricCard
           title="Protocol Fees Collected"
           value={`$${((treasuryData?.totalFeesCollected || 0) / 1000000).toFixed(1)}M`}
@@ -246,26 +263,26 @@ export function TreasuryDashboard() {
         </ChartContainer>
       </div>
 
-      {/* Protocol Revenue Chart (from Subgraph) */}
-      {treasuryData?.dailyRevenue && treasuryData.dailyRevenue.length > 0 && (
+      {/* Monthly Revenue Chart (from Dune Custom Query) */}
+      {treasuryData?.monthlyRevenue && treasuryData.monthlyRevenue.length > 0 && (
         <ChartContainer
-          title="Protocol Revenue (Last 30 Days)"
-          subtitle="Daily fees collected from protocol usage (Source: Subgraph)"
+          title={treasuryData.hasCustomDuneQuery ? "Monthly Protocol Revenue (Dune Custom Query)" : "Protocol Revenue"}
+          subtitle={treasuryData.hasCustomDuneQuery ? "Monthly fees from your custom Dune Analytics query" : "Daily fees collected from protocol usage"}
         >
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={treasuryData.dailyRevenue.slice().reverse()}>
+            <LineChart data={treasuryData.monthlyRevenue.slice().reverse()}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
-                dataKey="date" 
-                tickFormatter={(date) => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                dataKey="month" 
+                tickFormatter={(month) => month ? new Date(month).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) : month}
               />
               <YAxis 
                 tickFormatter={(val) => `$${(val / 1000).toFixed(0)}K`}
-                label={{ value: 'Daily Revenue', angle: -90, position: 'insideLeft' }}
+                label={{ value: treasuryData.hasCustomDuneQuery ? 'Monthly Revenue' : 'Daily Revenue', angle: -90, position: 'insideLeft' }}
               />
               <Tooltip 
                 formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
-                labelFormatter={(date) => new Date(date).toLocaleDateString()}
+                labelFormatter={(month) => month}
               />
               <Legend />
               <Line 
@@ -273,7 +290,7 @@ export function TreasuryDashboard() {
                 dataKey="revenue" 
                 stroke="#10B981" 
                 strokeWidth={2} 
-                name="Daily Fees"
+                name={treasuryData.hasCustomDuneQuery ? "Monthly Fees" : "Daily Fees"}
                 dot={{ fill: '#10B981' }}
               />
             </LineChart>

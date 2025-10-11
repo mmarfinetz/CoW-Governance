@@ -46,6 +46,7 @@ async function querySubgraph(query, variables = {}, network = 'mainnet') {
     }
 
     console.log(`[SubgraphService] Querying ${network} subgraph via The Graph decentralized network`);
+    console.log(`[SubgraphService] URL: ${url.substring(0, 80)}...`); // Show partial URL
 
     const response = await axios.post(url, {
       query,
@@ -56,15 +57,24 @@ async function querySubgraph(query, variables = {}, network = 'mainnet') {
       }
     });
 
+    console.log('[SubgraphService] Response status:', response.status);
+    console.log('[SubgraphService] Response data:', response.data);
+
     if (response.data.errors) {
-      console.error('[SubgraphService] GraphQL errors:', response.data.errors);
+      console.error('[SubgraphService] GraphQL errors:', JSON.stringify(response.data.errors, null, 2));
       throw new Error(`Subgraph query error: ${response.data.errors[0].message}`);
+    }
+
+    if (!response.data.data) {
+      console.error('[SubgraphService] No data in response:', response.data);
+      throw new Error('Subgraph returned no data');
     }
 
     console.log('[SubgraphService] Query successful');
     return response.data.data;
   } catch (error) {
     console.error(`[SubgraphService] Error querying ${network} subgraph:`, error.message);
+    console.error(`[SubgraphService] Full error:`, error.response?.data || error);
     throw error;
   }
 }

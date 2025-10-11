@@ -12,11 +12,11 @@
         "description": "Monthly revenue aggregation and treasury composition"
       },
       "revenue": {
-        "id": "3700123",
+        "id": "5938001",
         "version": "1.0",
-        "name": "Monthly Revenue Streams",
+        "name": "Monthly Revenue",
         "cacheDuration": 3600000,
-        "description": "Detailed breakdown of DAO revenue sources"
+        "description": "Custom monthly revenue query"
       },
       "solverRewards": {
         "id": "5270914",

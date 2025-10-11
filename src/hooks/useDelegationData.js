@@ -13,22 +13,24 @@ const COW_SPACE = API_CONFIG.snapshot.space;
 async function fetchTopDelegates(first = 100) {
   const query = `
     query Delegates {
-      space(id: "${COW_SPACE}") {
+      delegates(
+        first: ${first},
+        where: { space: "${COW_SPACE}" },
+        orderBy: delegatedVotes,
+        orderDirection: desc
+      ) {
         id
-        name
-        delegationPortalUrl
+        delegatedVotes
+        delegators
       }
     }
   `;
 
   try {
     const response = await axios.post(SNAPSHOT_API, { query });
-    console.log('[DelegationService] Snapshot space response:', response.data);
-    
-    // NOTE: Delegation query schema may have changed or be unavailable
-    // Returning empty array for now - this feature may need alternative data source
-    console.warn('[DelegationService] Delegation query not fully implemented - Snapshot API may not support this endpoint');
-    return [];
+    const delegates = response.data.data?.delegates || [];
+    console.log('[DelegationService] Fetched', delegates.length, 'delegates');
+    return delegates;
   } catch (error) {
     console.error('Error fetching delegates from Snapshot:', error.response?.data || error.message);
     

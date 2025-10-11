@@ -14,7 +14,8 @@ VITE_GRAPH_API_KEY=
 # OPTIONAL API KEYS
 # ============================================
 
-# Dune Analytics (optional - now replaced by subgraph)
+# Dune Analytics (OPTIONAL - for custom monthly revenue query)
+# Get yours at: https://dune.com/settings/api
 VITE_DUNE_API_KEY=
 
 # CoinGecko API Key (OPTIONAL - nice to have for token price)

@@ -147,11 +147,13 @@ export async function fetchAllCoWDAOSafes() {
 
 /**
  * Calculate total treasury value across all Safes
+ * NOTE: Safe API does not provide USD pricing, so totalUsd will be 0
+ * This function returns token balances but cannot calculate USD values
  */
 export async function calculateTotalTreasuryValue() {
-  const safes = await fetchAllCoWDAOSafes();
+  const safes = [];
+  let totalUsd = 0; // Will be 0 because Safe API doesn't provide pricing
 
-  let totalUsd = 0;
   const composition = {
     stables: 0,
     eth: 0,
@@ -159,32 +161,39 @@ export async function calculateTotalTreasuryValue() {
     other: 0
   };
 
-  for (const safe of safes) {
-    if (safe.balances) {
-      for (const balance of safe.balances) {
-        const usdValue = parseFloat(balance.fiatBalance || 0);
-        totalUsd += usdValue;
+  // Fetch token balances for each Safe address
+  for (const [name, address] of Object.entries(SAFE_ADDRESSES)) {
+    try {
+      console.log(`[SafeService] Fetching balances for ${name} (${address})`);
+      const info = await fetchSafeInfo(address).catch(() => null);
+      const balances = await fetchSafeBalances(address);
 
-        // Categorize tokens
-        if (balance.token?.symbol?.includes('USD') ||
-            balance.token?.symbol?.includes('DAI')) {
-          composition.stables += usdValue;
-        } else if (balance.token?.symbol === 'ETH' ||
-                   balance.token?.symbol === 'WETH') {
-          composition.eth += usdValue;
-        } else if (balance.token?.symbol === 'COW' ||
-                   balance.token?.symbol === 'vCOW') {
-          composition.cow += usdValue;
-        } else {
-          composition.other += usdValue;
-        }
-      }
+      safes.push({
+        name,
+        address,
+        info,
+        balances,
+        totalUsd: 0 // Safe API doesn't provide USD values
+      });
+
+      console.log(`[SafeService] ${name}: ${balances.length} tokens (USD pricing not available from Safe API)`);
+    } catch (error) {
+      console.error(`Failed to fetch balances for ${name} (${address}):`, error.message);
+      safes.push({
+        name,
+        address,
+        error: error.message,
+        totalUsd: 0,
+        balances: []
+      });
     }
   }
 
+  console.log(`[SafeService] Fetched ${safes.length} Safe(s). Note: USD values not available from Safe API.`);
+
   return {
-    totalUsd,
-    composition,
+    totalUsd, // Will be 0 - Safe API limitation
+    composition, // Will be empty - Safe API limitation
     safes
   };
 }
