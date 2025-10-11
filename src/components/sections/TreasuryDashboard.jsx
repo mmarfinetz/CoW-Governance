@@ -58,10 +58,53 @@ export function TreasuryDashboard() {
   ];
 
   if (error) {
+    const isQueryAccessError = error.includes('not found') || error.includes('private') || error.includes('permission');
+    const isAuthError = error.includes('Invalid') || error.includes('401');
+    
     return (
       <div className="space-y-6">
         <SectionHeader title="Treasury & Economic Model" />
-        <ErrorMessage message={error} onRetry={refetch} />
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold text-red-900 mb-2">❌ Treasury Data Error</h3>
+            <p className="text-red-800 font-medium mb-3">{error}</p>
+            
+            {isQueryAccessError && (
+              <div className="space-y-2 text-sm text-red-700">
+                <p className="font-semibold">The Dune queries may be private or inaccessible:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>The queries (IDs: 3700123, 5270914, 5533118) may be private</li>
+                  <li>You can create your own public queries on Dune</li>
+                  <li>Or fork the queries from: <a href="https://dune.com/cowprotocol" target="_blank" rel="noopener noreferrer" className="underline font-medium">dune.com/cowprotocol</a></li>
+                  <li>Then update the query IDs in <code className="bg-red-100 px-1 rounded">src/config/govConfig.json</code></li>
+                </ul>
+              </div>
+            )}
+            
+            {isAuthError && (
+              <div className="space-y-2 text-sm text-red-700">
+                <p className="font-semibold">API Key Issue:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>Check that your <code className="bg-red-100 px-1 rounded">.env</code> file has the correct key</li>
+                  <li>Verify your key at: <a href="https://dune.com/settings/api" target="_blank" rel="noopener noreferrer" className="underline font-medium">dune.com/settings/api</a></li>
+                  <li>Make sure you restarted the dev server after adding the key</li>
+                </ul>
+              </div>
+            )}
+            
+            <div className="mt-4 pt-4 border-t border-red-200">
+              <p className="text-sm text-red-600 mb-2">
+                <strong>Check browser console (F12)</strong> for detailed error messages
+              </p>
+              <button
+                onClick={refetch}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

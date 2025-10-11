@@ -72,13 +72,29 @@ export async function getQueryResults(queryId) {
           { headers: getHeaders() }
         );
 
-        const rows = response.data.result.rows;
+        const rows = response.data.result?.rows;
+        if (!rows) {
+          console.error('[DuneService] No rows in response:', response.data);
+          throw new Error(`Query ${queryId} returned no data. Response: ${JSON.stringify(response.data)}`);
+        }
         console.log('[DuneService] Received', rows.length, 'rows at', new Date().toISOString());
         return rows;
       }, 1, 1000, 2000); // Reduced retries: 1 attempt, shorter backoff for faster failures
     });
   } catch (error) {
-    console.error(`Error getting results for query ${queryId}:`, error);
+    // Enhanced error messages
+    if (error.response?.status === 404) {
+      console.error(`[DuneService] Query ${queryId} not found or not accessible with your API key`);
+      throw new Error(`Dune query ${queryId} not found. This query may be private or deleted. See console for details.`);
+    } else if (error.response?.status === 401) {
+      console.error('[DuneService] Invalid or expired Dune API key');
+      throw new Error('Invalid Dune API key. Please check your .env file and ensure the key is correct.');
+    } else if (error.response?.status === 403) {
+      console.error(`[DuneService] Access forbidden to query ${queryId}. This query may be private.`);
+      throw new Error(`Query ${queryId} is private or you don't have permission to access it.`);
+    }
+    
+    console.error(`[DuneService] Error getting results for query ${queryId}:`, error.response?.data || error.message);
     throw error;
   }
 }
