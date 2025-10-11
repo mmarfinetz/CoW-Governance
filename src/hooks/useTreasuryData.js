@@ -43,17 +43,25 @@ export function useTreasuryData(shouldFetch = true) {
       // Calculate treasury metrics from subgraph data (supplementary)
       const subgraphMetrics = subgraphData ? calculateTreasuryMetrics(subgraphData) : null;
 
-      // Calculate revenue from Dune data - sum up monthly protocol fees
-      let duneRevenue = 0;
-      if (duneData?.treasury?.composition) {
-        // Dune treasury query returns monthly fee data
-        duneRevenue = duneData.treasury.composition.reduce((sum, row) => {
-          return sum + parseFloat(row.total_protocol_fee_in_eth || 0);
-        }, 0);
+      // Process monthly revenue from Dune custom query (5938001)
+      let duneMonthlyRevenue = [];
+      let duneTotalRevenue = 0;
+      
+      if (duneData?.revenue?.revenueByType && Array.isArray(duneData.revenue.revenueByType)) {
+        // Your custom monthly revenue query - adapt to your query's column names
+        duneMonthlyRevenue = duneData.revenue.revenueByType.map(row => ({
+          month: row.month || row.date || row.time_period || row.period,
+          revenue: parseFloat(row.revenue_usd || row.total_revenue || row.fees_usd || row.protocol_fees || 0),
+          fees: parseFloat(row.fees || row.protocol_fees || 0),
+          volume: parseFloat(row.volume || row.trading_volume || 0)
+        }));
+        
+        duneTotalRevenue = duneMonthlyRevenue.reduce((sum, month) => sum + month.revenue, 0);
+        console.log('[TreasuryData] Dune monthly revenue:', duneMonthlyRevenue.length, 'months, total: $', duneTotalRevenue.toFixed(2));
       }
 
       // Check if we have protocol metrics data (Safe treasury might not have USD prices)
-      const hasProtocolData = duneRevenue > 0 || (subgraphMetrics?.totalVolume > 0);
+      const hasProtocolData = duneTotalRevenue > 0 || (subgraphMetrics?.totalVolume > 0);
 
       if (!hasProtocolData) {
         console.warn('[TreasuryData] No protocol data available from Dune or The Graph');
@@ -72,33 +80,38 @@ export function useTreasuryData(shouldFetch = true) {
       console.log('[TreasuryData] Successfully compiled treasury data:', {
         safeValue: safeData?.totalUsd,
         safeComposition: safeData?.composition,
-        duneRevenue: duneRevenue,
+        duneMonthlyData: duneMonthlyRevenue.length,
+        duneTotalRevenue: duneTotalRevenue,
         subgraphVolume: subgraphMetrics?.totalVolume,
         subgraphFees: subgraphMetrics?.totalFeesCollected
       });
 
-      // Combine data from all sources - Dune as primary source for protocol metrics
+      // Combine data from all sources - Dune as primary source for revenue metrics
       setData({
         // Treasury holdings from Safe
         totalValue: safeData?.totalUsd || 0,
         composition: safeData?.composition || {},
         safes: safeData?.safes || [],
 
-        // Protocol metrics from Dune (primary source)
-        totalFeesCollected: duneData?.revenue?.totalRevenue || subgraphMetrics?.totalFeesCollected || 0,
+        // Protocol metrics - prioritize Dune custom query for fees
+        totalFeesCollected: duneTotalRevenue > 0 ? duneTotalRevenue : (subgraphMetrics?.totalFeesCollected || 0),
         totalVolume: subgraphMetrics?.totalVolume || 0, // Subgraph has volume data
         totalTrades: subgraphMetrics?.totalTrades || 0,
+        
+        // Revenue data - use Dune monthly data if available, fallback to subgraph daily
+        monthlyRevenue: duneMonthlyRevenue.length > 0 ? duneMonthlyRevenue : (subgraphMetrics?.dailyRevenue || []),
         dailyRevenue: subgraphMetrics?.dailyRevenue || [],
         topTokens: subgraphMetrics?.topTokens || [],
 
         // Dune-specific data
         duneData: duneData,
         revenueByType: duneData?.revenue?.revenueByType || [],
+        hasCustomDuneQuery: duneMonthlyRevenue.length > 0,
 
         // Supplementary subgraph data
         subgraphMetrics: subgraphMetrics,
 
-        source: 'Dune + Safe + The Graph'
+        source: duneMonthlyRevenue.length > 0 ? 'Dune (Custom Query) + Safe + The Graph' : 'Dune + Safe + The Graph'
       });
 
       setLastUpdated(new Date());
