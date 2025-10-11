@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { fetchAllProtocolData, calculateTreasuryMetrics } from '../services/cowProtocolDataService';
+import { fetchAllProtocolData, calculateTreasuryMetrics } from '../services/subgraphService';
 import { calculateTotalTreasuryValue } from '../services/safeService';
 import { getCachedTreasury } from '../services/cacheService';
 
 /**
- * Hook to fetch and manage treasury data from CoW Protocol API and Safe
- * NOTE: Using CoW Protocol REST API as primary data source (subgraph deprecated)
+ * Hook to fetch and manage treasury data from Subgraph (source of truth) and Safe
+ * NOTE: Using CoW Protocol Subgraph on The Graph's decentralized network
  */
 export function useTreasuryData(shouldFetch = true) {
   const [data, setData] = useState(null);
@@ -18,12 +18,12 @@ export function useTreasuryData(shouldFetch = true) {
       setLoading(true);
       setError(null);
 
-      console.log('[TreasuryData] Fetching from CoW Protocol API and Safe APIs...');
+      console.log('[TreasuryData] Fetching from Subgraph (decentralized network) and Safe APIs...');
 
-      // Fetch from both CoW Protocol API and Safe APIs - allow partial failures
-      const [cowProtocolData, safeData] = await Promise.all([
+      // Fetch from both Subgraph and Safe APIs - allow partial failures
+      const [subgraphData, safeData] = await Promise.all([
         getCachedTreasury(() => fetchAllProtocolData('mainnet')).catch(err => {
-          console.error('[TreasuryData] CoW Protocol API fetch failed:', err);
+          console.error('[TreasuryData] Subgraph fetch failed:', err);
           return null;
         }),
         calculateTotalTreasuryValue().catch(err => {
@@ -34,15 +34,15 @@ export function useTreasuryData(shouldFetch = true) {
 
       console.log('[TreasuryData] Data fetched successfully');
 
-      // Calculate treasury metrics from CoW Protocol API data
-      const treasuryMetrics = cowProtocolData ? calculateTreasuryMetrics(cowProtocolData) : null;
+      // Calculate treasury metrics from subgraph data
+      const treasuryMetrics = subgraphData ? calculateTreasuryMetrics(subgraphData) : null;
 
-      // Check if we have any data (prioritize Safe data since it's more reliable)
+      // Check if we have any data
       const hasAnyData = (safeData?.totalUsd > 0) || (treasuryMetrics?.totalVolume > 0);
       
       if (!hasAnyData) {
-        console.warn('[TreasuryData] No data available from CoW Protocol API or Safe');
-        setError('No treasury data available. Both Safe API and CoW Protocol API returned no data.');
+        console.warn('[TreasuryData] No data available from Subgraph or Safe');
+        setError('No treasury data available. Both Safe API and Subgraph returned no data.');
         setData(null);
         setLastUpdated(new Date());
         return;
@@ -50,29 +50,29 @@ export function useTreasuryData(shouldFetch = true) {
       
       console.log('[TreasuryData] Successfully compiled treasury data:', {
         safeValue: safeData?.totalUsd,
-        protocolVolume: treasuryMetrics?.totalVolume
+        protocolVolume: treasuryMetrics?.totalVolume,
+        protocolFees: treasuryMetrics?.totalFeesCollected
       });
 
-      // Combine data from both sources
+      // Combine data from both sources - Subgraph as source of truth
       setData({
         // Treasury holdings from Safe
         totalValue: safeData?.totalUsd || 0,
         composition: safeData?.composition || {},
         safes: safeData?.safes || [],
         
-        // Protocol metrics from CoW Protocol API
+        // Protocol metrics from Subgraph (source of truth)
         protocolMetrics: treasuryMetrics,
         totalFeesCollected: treasuryMetrics?.totalFeesCollected || 0,
         totalVolume: treasuryMetrics?.totalVolume || 0,
         totalTrades: treasuryMetrics?.totalTrades || 0,
         dailyRevenue: treasuryMetrics?.dailyRevenue || [],
         topTokens: treasuryMetrics?.topTokens || [],
-        recentSolvers: treasuryMetrics?.recentSolvers || [],
         
-        // Raw protocol data for detailed views
-        protocolData: cowProtocolData,
+        // Raw subgraph data for detailed views
+        subgraphData: subgraphData,
         
-        source: 'CoW Protocol API + Safe'
+        source: 'Subgraph + Safe'
       });
 
       setLastUpdated(new Date());
