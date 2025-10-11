@@ -37,16 +37,21 @@ export function useTreasuryData(shouldFetch = true) {
       // Calculate treasury metrics from CoW Protocol API data
       const treasuryMetrics = cowProtocolData ? calculateTreasuryMetrics(cowProtocolData) : null;
 
-      // Check if we have any data
+      // Check if we have any data (prioritize Safe data since it's more reliable)
       const hasAnyData = (safeData?.totalUsd > 0) || (treasuryMetrics?.totalVolume > 0);
       
       if (!hasAnyData) {
         console.warn('[TreasuryData] No data available from CoW Protocol API or Safe');
-        setError('No treasury data available. The API may be temporarily unavailable.');
+        setError('No treasury data available. Both Safe API and CoW Protocol API returned no data.');
         setData(null);
         setLastUpdated(new Date());
         return;
       }
+      
+      console.log('[TreasuryData] Successfully compiled treasury data:', {
+        safeValue: safeData?.totalUsd,
+        protocolVolume: treasuryMetrics?.totalVolume
+      });
 
       // Combine data from both sources
       setData({
