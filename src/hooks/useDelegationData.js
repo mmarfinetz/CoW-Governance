@@ -7,29 +7,35 @@ const COW_SPACE = API_CONFIG.snapshot.space;
 
 /**
  * Fetch top delegates from Snapshot
+ * NOTE: The delegation query may not be available in the current Snapshot GraphQL API
+ * This is a known limitation - delegation data may need to come from a different source
  */
 async function fetchTopDelegates(first = 100) {
   const query = `
     query Delegates {
-      delegations(
-        first: ${first},
-        where: { space: "${COW_SPACE}" },
-        orderBy: "delegatedVotes",
-        orderDirection: desc
-      ) {
-        delegate
-        delegatedVotes
-        delegators
-        timestamp
+      space(id: "${COW_SPACE}") {
+        id
+        name
+        delegationPortalUrl
       }
     }
   `;
 
   try {
     const response = await axios.post(SNAPSHOT_API, { query });
-    return response.data.data.delegations || [];
+    console.log('[DelegationService] Snapshot space response:', response.data);
+    
+    // NOTE: Delegation query schema may have changed or be unavailable
+    // Returning empty array for now - this feature may need alternative data source
+    console.warn('[DelegationService] Delegation query not fully implemented - Snapshot API may not support this endpoint');
+    return [];
   } catch (error) {
-    console.error('Error fetching delegates from Snapshot:', error);
+    console.error('Error fetching delegates from Snapshot:', error.response?.data || error.message);
+    
+    // Provide more helpful error message
+    if (error.response?.status === 400) {
+      throw new Error('Snapshot API returned 400 error. The delegation query schema may have changed or this endpoint may no longer be available. Check Snapshot API documentation for current schema.');
+    }
     throw error;
   }
 }

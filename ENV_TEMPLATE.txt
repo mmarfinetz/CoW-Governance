@@ -1,0 +1,11 @@
+# Copy this to .env in the root directory
+# File name should be: .env (not .env.txt)
+
+VITE_DUNE_API_KEY=your_dune_api_key_here
+VITE_COINGECKO_API_KEY=
+VITE_ETHERSCAN_API_KEY=
+
+# Get Dune API key at: https://dune.com/settings/api
+# Get CoinGecko key at: https://www.coingecko.com/en/api/pricing (optional)
+# Get Etherscan key at: https://etherscan.io/myapikey (optional)
+

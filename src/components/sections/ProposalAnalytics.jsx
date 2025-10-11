@@ -23,17 +23,7 @@ export function ProposalAnalytics() {
     setIsVisible(true);
   }, []);
 
-  // Show loading placeholder if data not yet loaded
-  if (!isVisible || (!proposals.length && !error)) {
-    return (
-      <div className="space-y-6">
-        <SectionHeader title="Proposal Analytics" />
-        <LoadingSpinner message="Initializing proposal analytics..." />
-      </div>
-    );
-  }
-
-  // Process data for charts
+  // Process data for charts - MUST be before any conditional returns (Rules of Hooks)
   const { timelineData, categoryData, recentProposals } = useMemo(() => {
     if (!proposals || proposals.length === 0) {
       return { timelineData: [], categoryData: [], recentProposals: [] };
@@ -75,26 +65,7 @@ export function ProposalAnalytics() {
     };
   }, [proposals]);
 
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <SectionHeader title="Proposal Activity & Voting Trends" />
-        <ErrorMessage message={error} onRetry={refetch} />
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <SectionHeader title="Proposal Activity & Voting Trends" />
-        <LoadingSpinner message="Loading proposal data..." />
-      </div>
-    );
-  }
-
-  const hasData = proposals && proposals.length > 0;
-
+  // Define columns for the data table - MUST be after all hooks
   const columns = [
     {
       key: 'title',
@@ -140,6 +111,36 @@ export function ProposalAnalytics() {
       }
     }
   ];
+
+  // Show loading placeholder if data not yet loaded
+  if (!isVisible || (!proposals.length && !error)) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader title="Proposal Analytics" />
+        <LoadingSpinner message="Initializing proposal analytics..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader title="Proposal Activity & Voting Trends" />
+        <ErrorMessage message={error} onRetry={refetch} />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader title="Proposal Activity & Voting Trends" />
+        <LoadingSpinner message="Loading proposal data..." />
+      </div>
+    );
+  }
+
+  const hasData = proposals && proposals.length > 0;
 
   return (
     <div className="space-y-6">

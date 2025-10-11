@@ -77,11 +77,33 @@ export function TreasuryDashboard() {
 
   // If no data, show message - NO FALLBACK
   if (!treasuryData?.totalValue && !error) {
+    const hasDuneKey = !!import.meta.env.VITE_DUNE_API_KEY;
+    
     return (
       <div className="space-y-6">
         <SectionHeader title="Treasury & Economic Model" />
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <p className="text-yellow-800">No treasury data available from APIs. Check console for details.</p>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold text-yellow-900 mb-2">⚠️ No Treasury Data Available</h3>
+            {!hasDuneKey ? (
+              <div className="space-y-2">
+                <p className="text-yellow-800 font-medium">Missing Dune Analytics API Key</p>
+                <p className="text-yellow-700 text-sm">
+                  To view treasury data, you need to add your Dune API key:
+                </p>
+                <ol className="list-decimal list-inside text-sm text-yellow-700 space-y-1 ml-2">
+                  <li>Get a free API key at <a href="https://dune.com/settings/api" target="_blank" rel="noopener noreferrer" className="underline font-medium">dune.com/settings/api</a></li>
+                  <li>Create a <code className="bg-yellow-100 px-1 rounded">.env</code> file in the project root (see <code className="bg-yellow-100 px-1 rounded">ENV_TEMPLATE.txt</code>)</li>
+                  <li>Add: <code className="bg-yellow-100 px-1 rounded">VITE_DUNE_API_KEY=your_key_here</code></li>
+                  <li>Restart the dev server: <code className="bg-yellow-100 px-1 rounded">npm run dev</code></li>
+                </ol>
+              </div>
+            ) : (
+              <p className="text-yellow-800">
+                Dune API key is configured but no data was returned. Check the browser console for error details.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );

@@ -50,7 +50,36 @@ export function DelegationDashboard() {
     return (
       <div className="space-y-6">
         <SectionHeader title="Delegation & Voting Power" />
-        <ErrorMessage message={error} onRetry={refetch} />
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold text-yellow-900 mb-2">⚠️ Delegation Data Unavailable</h3>
+            <div className="space-y-2">
+              <p className="text-yellow-800 font-medium">Snapshot API Error</p>
+              <p className="text-yellow-700 text-sm">
+                {error}
+              </p>
+              <p className="text-yellow-700 text-sm mt-3">
+                <strong>Note:</strong> The delegation query may not be available in the current Snapshot GraphQL API. 
+                This data may need to come from an alternative source. Visit{' '}
+                <a 
+                  href="https://snapshot.org/#/delegate/cow.eth" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="underline font-medium"
+                >
+                  snapshot.org/#/delegate/cow.eth
+                </a>
+                {' '}to view delegation information directly.
+              </p>
+              <button
+                onClick={refetch}
+                className="mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-medium transition"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
