@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { DollarSign, TrendingUp, Wallet } from 'lucide-react';
 import { SectionHeader } from '../shared/SectionHeader';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
@@ -163,7 +163,7 @@ export function TreasuryDashboard() {
       />
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <MetricCard
           title="Total Treasury"
           value={`$${(totalValue / 1000000).toFixed(1)}M`}
@@ -172,20 +172,27 @@ export function TreasuryDashboard() {
           color="green"
         />
         <MetricCard
+          title="Protocol Fees Collected"
+          value={`$${((treasuryData?.totalFeesCollected || 0) / 1000000).toFixed(1)}M`}
+          subtitle="All-time revenue (Subgraph)"
+          icon={TrendingUp}
+          color="blue"
+        />
+        <MetricCard
+          title="Total Volume"
+          value={`$${((treasuryData?.totalVolume || 0) / 1000000000).toFixed(2)}B`}
+          subtitle={`${treasuryData?.totalTrades?.toLocaleString() || 0} trades`}
+          icon={DollarSign}
+          color="purple"
+        />
+        <MetricCard
           title="COW Token Price"
           value={`$${cowPrice.toFixed(4)}`}
           subtitle={`${tokenData?.priceChange24h?.toFixed(2)}% (24h)`}
           icon={TrendingUp}
-          color="blue"
+          color={tokenData?.priceChange24h > 0 ? 'green' : 'red'}
           trend={`${tokenData?.priceChange24h > 0 ? '+' : ''}${tokenData?.priceChange24h?.toFixed(2)}%`}
           trendDirection={tokenData?.priceChange24h > 0 ? 'up' : 'down'}
-        />
-        <MetricCard
-          title="Market Cap"
-          value={`$${((tokenData?.marketCap || 0) / 1000000).toFixed(1)}M`}
-          subtitle="Fully diluted valuation"
-          icon={Wallet}
-          color="purple"
         />
       </div>
 
@@ -238,6 +245,65 @@ export function TreasuryDashboard() {
           </ResponsiveContainer>
         </ChartContainer>
       </div>
+
+      {/* Protocol Revenue Chart (from Subgraph) */}
+      {treasuryData?.dailyRevenue && treasuryData.dailyRevenue.length > 0 && (
+        <ChartContainer
+          title="Protocol Revenue (Last 30 Days)"
+          subtitle="Daily fees collected from protocol usage (Source: Subgraph)"
+        >
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={treasuryData.dailyRevenue.slice().reverse()}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="date" 
+                tickFormatter={(date) => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              />
+              <YAxis 
+                tickFormatter={(val) => `$${(val / 1000).toFixed(0)}K`}
+                label={{ value: 'Daily Revenue', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip 
+                formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                labelFormatter={(date) => new Date(date).toLocaleDateString()}
+              />
+              <Legend />
+              <Line 
+                type="monotone" 
+                dataKey="revenue" 
+                stroke="#10B981" 
+                strokeWidth={2} 
+                name="Daily Fees"
+                dot={{ fill: '#10B981' }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      )}
+
+      {/* Top Tokens by Volume (from Subgraph) */}
+      {treasuryData?.topTokens && treasuryData.topTokens.length > 0 && (
+        <ChartContainer
+          title="Top Tokens by Trading Volume"
+          subtitle="Most traded tokens on CoW Protocol (Source: Subgraph)"
+        >
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={treasuryData.topTokens.slice(0, 10)}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="symbol" />
+              <YAxis 
+                tickFormatter={(val) => `$${(val / 1000000).toFixed(0)}M`}
+                label={{ value: 'Volume (USD)', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip 
+                formatter={(value) => [`$${(value / 1000000).toFixed(2)}M`, 'Volume']}
+              />
+              <Legend />
+              <Bar dataKey="volume" fill="#3B82F6" name="Trading Volume" />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      )}
 
       {/* Revenue Streams */}
       <div className="bg-white rounded-lg shadow-md p-6">

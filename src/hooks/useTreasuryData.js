@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { fetchAllDuneData } from '../services/duneService';
+import { fetchAllProtocolData, calculateTreasuryMetrics } from '../services/subgraphService';
 import { calculateTotalTreasuryValue } from '../services/safeService';
 import { getCachedTreasury } from '../services/cacheService';
 
 /**
- * Hook to fetch and manage treasury data from multiple sources
+ * Hook to fetch and manage treasury data from Subgraph (source of truth) and Safe
+ * NOTE: Using CoW Protocol Subgraph as primary data source per project requirements
  */
 export function useTreasuryData(shouldFetch = true) {
   const [data, setData] = useState(null);
@@ -17,43 +18,62 @@ export function useTreasuryData(shouldFetch = true) {
       setLoading(true);
       setError(null);
 
-      console.log('Fetching treasury data from Safe and Dune APIs...');
+      console.log('[TreasuryData] Fetching from Subgraph (source of truth) and Safe APIs...');
 
-      // Fetch from both Dune and Safe APIs - allow partial failures
-      const [duneData, safeData] = await Promise.all([
-        getCachedTreasury(() => fetchAllDuneData()).catch(err => {
-          console.error('Dune data fetch failed (partial data may still load):', err);
-          return { treasury: { totalValue: 0, composition: [] }, revenue: {}, solverRewards: {}, solverInfo: {} };
+      // Fetch from both Subgraph and Safe APIs - allow partial failures
+      const [subgraphData, safeData] = await Promise.all([
+        getCachedTreasury(() => fetchAllProtocolData('mainnet')).catch(err => {
+          console.error('[TreasuryData] Subgraph data fetch failed:', err);
+          return null;
         }),
         calculateTotalTreasuryValue().catch(err => {
-          console.error('Safe data fetch failed (using Dune as fallback):', err);
+          console.error('[TreasuryData] Safe data fetch failed:', err);
           return { totalUsd: 0, composition: {}, safes: [] };
         })
       ]);
 
-      console.log('Treasury data fetched (may be partial):', { duneData, safeData });
+      console.log('[TreasuryData] Data fetched successfully');
 
-      // Accept partial data - don't require all queries to succeed
-      const hasAnyData = (safeData.totalUsd > 0) || (duneData.treasury && duneData.treasury.totalValue > 0);
+      // Calculate treasury metrics from subgraph data
+      const treasuryMetrics = subgraphData ? calculateTreasuryMetrics(subgraphData) : null;
+
+      // Check if we have any data
+      const hasAnyData = (safeData?.totalUsd > 0) || (treasuryMetrics?.totalFeesCollected > 0);
       
       if (!hasAnyData) {
-        console.warn('No treasury data available from any source');
+        console.warn('[TreasuryData] No data available from Subgraph or Safe');
+        setError('No treasury data available. The subgraph may be temporarily unavailable.');
+        setData(null);
+        setLastUpdated(new Date());
+        return;
       }
 
-      // Combine data from both sources - ALL REAL DATA
+      // Combine data from both sources - Subgraph as source of truth
       setData({
-        totalValue: safeData.totalUsd || duneData.treasury.totalValue,
-        composition: safeData.composition,
-        safes: safeData.safes,
-        duneData: duneData,
-        source: safeData.totalUsd > 0 ? 'Safe + Dune' : 'Dune'
+        // Treasury holdings from Safe
+        totalValue: safeData?.totalUsd || 0,
+        composition: safeData?.composition || {},
+        safes: safeData?.safes || [],
+        
+        // Protocol metrics from Subgraph (source of truth)
+        protocolMetrics: treasuryMetrics,
+        totalFeesCollected: treasuryMetrics?.totalFeesCollected || 0,
+        totalVolume: treasuryMetrics?.totalVolume || 0,
+        totalTrades: treasuryMetrics?.totalTrades || 0,
+        dailyRevenue: treasuryMetrics?.dailyRevenue || [],
+        topTokens: treasuryMetrics?.topTokens || [],
+        
+        // Raw subgraph data for detailed views
+        subgraphData: subgraphData,
+        
+        source: 'Subgraph + Safe'
       });
 
       setLastUpdated(new Date());
     } catch (err) {
-      console.error('Error fetching treasury data:', err);
+      console.error('[TreasuryData] Error fetching treasury data:', err);
       setError(err.message || 'Failed to fetch treasury data from APIs');
-      setData(null); // NO fallback data
+      setData(null);
     } finally {
       setLoading(false);
     }
