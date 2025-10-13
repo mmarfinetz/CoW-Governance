@@ -1,78 +1,61 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_CONFIG } from '../config/apiConfig';
-
-const SNAPSHOT_API = API_CONFIG.snapshot.endpoint;
-const COW_SPACE = API_CONFIG.snapshot.space;
+import { fetchAllDelegates, fetchVotesByAddress } from '../services/delegationService';
 
 /**
- * Fetch top delegates from Snapshot
- * NOTE: The delegation query may not be available in the current Snapshot GraphQL API
- * This is a known limitation - delegation data may need to come from a different source
+ * Fetch delegates by aggregating delegation records from Snapshot
+ * This intelligently builds the delegates list since Snapshot has no direct "delegates" query
  */
-async function fetchTopDelegates(first = 100) {
-  const query = `
-    query Delegates {
-      delegates(
-        first: ${first},
-        where: { space: "${COW_SPACE}" },
-        orderBy: delegatedVotes,
-        orderDirection: desc
-      ) {
-        id
-        delegatedVotes
-        delegators
-      }
-    }
-  `;
-
+async function fetchTopDelegates(first = 1000) {
   try {
-    const response = await axios.post(SNAPSHOT_API, { query });
-    const delegates = response.data.data?.delegates || [];
-    console.log('[DelegationService] Fetched', delegates.length, 'delegates');
+    console.log('[useDelegationData] Fetching delegates by aggregating delegation records...');
+
+    // Use the intelligent aggregation service to build delegates list
+    const delegates = await fetchAllDelegates(undefined, first);
+
+    console.log('[useDelegationData] Successfully fetched', delegates.length, 'delegates');
     return delegates;
   } catch (error) {
-    console.error('Error fetching delegates from Snapshot:', error.response?.data || error.message);
-    
-    // Provide more helpful error message
-    if (error.response?.status === 400) {
-      throw new Error('Snapshot API returned 400 error. The delegation query schema may have changed or this endpoint may no longer be available. Check Snapshot API documentation for current schema.');
-    }
-    throw error;
+    const details = error?.response?.data?.errors?.[0]?.message || error?.response?.data || error.message;
+    console.error('[useDelegationData] Error fetching delegates:', details);
+    throw new Error(`Failed to fetch delegates: ${details}`);
   }
 }
 
 /**
- * Calculate delegation metrics
+ * Calculate delegation metrics from aggregated delegate data
  */
 function calculateDelegationMetrics(delegates) {
   if (!delegates || delegates.length === 0) {
     return {
       totalDelegatedPower: 0,
       totalDelegators: 0,
-      averageDelegationSize: 0,
+      totalDelegates: 0,
+      averageDelegatorsPerDelegate: 0,
       topDelegateShare: 0,
       delegationConcentration: 0
     };
   }
 
-  const totalDelegatedPower = delegates.reduce((sum, d) => sum + (d.delegatedVotes || 0), 0);
-  const totalDelegators = delegates.reduce((sum, d) => sum + (d.delegators || 0), 0);
-  const averageDelegationSize = totalDelegators > 0 ? totalDelegatedPower / totalDelegators : 0;
-  const topDelegateShare = delegates.length > 0 && totalDelegatedPower > 0
-    ? (delegates[0].delegatedVotes / totalDelegatedPower) * 100
-    : 0;
+  // Note: votingPower may not be available without additional API calls
+  // For now, we use delegator count as a proxy for influence
+  const totalDelegators = delegates.reduce((sum, d) => sum + (d.delegatorCount || 0), 0);
+  const totalDelegatedPower = delegates.reduce((sum, d) => sum + (d.votingPower || 0), 0);
+  const averageDelegatorsPerDelegate = delegates.length > 0 ? totalDelegators / delegates.length : 0;
 
-  // Calculate Gini coefficient (delegation concentration)
-  // Simplified calculation: ratio of top 10% to total
-  const top10Count = Math.ceil(delegates.length * 0.1);
-  const top10Power = delegates.slice(0, top10Count).reduce((sum, d) => sum + (d.delegatedVotes || 0), 0);
-  const delegationConcentration = totalDelegatedPower > 0 ? (top10Power / totalDelegatedPower) * 100 : 0;
+  // Calculate concentration based on delegator count
+  const topDelegateDelegators = delegates[0]?.delegatorCount || 0;
+  const topDelegateShare = totalDelegators > 0 ? (topDelegateDelegators / totalDelegators) * 100 : 0;
+
+  // Calculate concentration: ratio of top 10% to total
+  const top10Count = Math.max(1, Math.ceil(delegates.length * 0.1));
+  const top10Delegators = delegates.slice(0, top10Count).reduce((sum, d) => sum + (d.delegatorCount || 0), 0);
+  const delegationConcentration = totalDelegators > 0 ? (top10Delegators / totalDelegators) * 100 : 0;
 
   return {
-    totalDelegatedPower,
+    totalDelegatedPower, // May be 0 if voting power not fetched
     totalDelegators,
-    averageDelegationSize,
+    totalDelegates: delegates.length,
+    averageDelegatorsPerDelegate,
     topDelegateShare,
     delegationConcentration
   };
@@ -93,21 +76,47 @@ export function useDelegationData(shouldFetch = true) {
       setLoading(true);
       setError(null);
 
-      const delegateData = await fetchTopDelegates(100);
+      console.log('[useDelegationData] Starting delegate fetch...');
+      const delegateData = await fetchTopDelegates(500);
 
-      // Sort by delegated votes descending
+      // Data is already sorted by delegator count from fetchAllDelegates
+      // But we can re-sort if needed for other criteria
       const sortedDelegates = delegateData.sort((a, b) =>
-        (b.delegatedVotes || 0) - (a.delegatedVotes || 0)
+        (b.delegatorCount || 0) - (a.delegatorCount || 0)
       );
 
-      const calculatedMetrics = calculateDelegationMetrics(sortedDelegates);
+      // Enrich top delegates with voting power (from recent votes)
+      const ENRICH_COUNT = 30;
+      const toEnrich = sortedDelegates.slice(0, ENRICH_COUNT);
+      console.log(`[useDelegationData] Enriching top ${toEnrich.length} with voting power...`);
+      const enrichedTop = await Promise.all(
+        toEnrich.map(async (d) => {
+          try {
+            const votes = await fetchVotesByAddress(d.address, 100);
+            const vpValues = votes.map(v => v.vp || 0).filter(v => v > 0);
+            const votingPower = vpValues.length ? Math.max(...vpValues) : 0; // strongest recent VP
+            return { ...d, votingPower, totalVotes: votes.length, recentVotes: votes.slice(0, 10) };
+          } catch (e) {
+            console.warn('[useDelegationData] Failed to enrich', d.address, e?.message || e);
+            return { ...d };
+          }
+        })
+      );
+      const enrichedDelegates = [...enrichedTop, ...sortedDelegates.slice(ENRICH_COUNT)];
 
-      setDelegates(sortedDelegates);
+      console.log('[useDelegationData] Calculating metrics for', enrichedDelegates.length, 'delegates');
+      const calculatedMetrics = calculateDelegationMetrics(enrichedDelegates);
+
+      console.log('[useDelegationData] Metrics:', calculatedMetrics);
+
+      setDelegates(enrichedDelegates);
       setMetrics(calculatedMetrics);
       setLastUpdated(new Date());
+
+      console.log('[useDelegationData] Successfully updated state with', enrichedDelegates.length, 'delegates');
     } catch (err) {
-      console.error('Error fetching delegation data:', err);
-      setError(err.message);
+      console.error('[useDelegationData] Error fetching delegation data:', err);
+      setError(err.message || 'Failed to fetch delegation data');
     } finally {
       setLoading(false);
     }

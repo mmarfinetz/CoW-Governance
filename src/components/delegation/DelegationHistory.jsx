@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ExternalLink, Clock, AlertCircle } from 'lucide-react';
-import { fetchDelegationHistory } from '../../services/delegationService';
-import { getCachedDelegationHistory } from '../../services/cacheService';
+import { fetchVotesByAddress } from '../../services/delegationService';
+import { getCachedDelegateVotes } from '../../services/cacheService';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { ErrorMessage } from '../shared/ErrorMessage';
 import { DataTable } from '../shared/DataTable';
@@ -19,14 +19,14 @@ export function DelegationHistory({ address }) {
       setError(null);
 
       try {
-        const data = await getCachedDelegationHistory(
+        const votes = await getCachedDelegateVotes(
           address,
-          () => fetchDelegationHistory(address)
+          () => fetchVotesByAddress(address, 100)
         );
-        setHistory(data || []);
+        setHistory(votes || []);
       } catch (err) {
-        console.error('Error loading delegation history:', err);
-        setError('Failed to load delegation history');
+        console.error('Error loading voting history:', err);
+        setError('Failed to load voting history');
         setHistory([]);
       } finally {
         setLoading(false);
@@ -62,7 +62,7 @@ export function DelegationHistory({ address }) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Delegation History
+          Voting History
         </h3>
         <div className="flex justify-center py-8">
           <LoadingSpinner />
@@ -75,7 +75,7 @@ export function DelegationHistory({ address }) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Delegation History
+          Voting History
         </h3>
         <ErrorMessage message={error} />
       </div>
@@ -86,12 +86,12 @@ export function DelegationHistory({ address }) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Delegation History
+          Voting History
         </h3>
         <div className="flex items-center justify-center py-8 text-gray-500">
           <div className="text-center">
             <Clock size={48} className="mx-auto mb-3 text-gray-300" />
-            <p>No delegation history found for this address</p>
+            <p>No voting history found for this address</p>
           </div>
         </div>
       </div>
@@ -100,7 +100,7 @@ export function DelegationHistory({ address }) {
 
   const columns = [
     {
-      key: 'timestamp',
+      key: 'created',
       label: 'Date',
       render: (value) => (
         <div>
@@ -110,99 +110,50 @@ export function DelegationHistory({ address }) {
       )
     },
     {
-      key: 'delegator',
-      label: 'From (Delegator)',
+      key: 'proposal',
+      label: 'Proposal',
       render: (value) => (
         <div className="flex items-center">
-          <code className="text-sm font-mono text-gray-900">
-            {formatAddress(value)}
-          </code>
-          <a
-            href={`https://snapshot.org/#/profile/${value}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-2 text-blue-600 hover:text-blue-700"
-          >
-            <ExternalLink size={14} />
-          </a>
+          <span className="text-sm text-gray-900 truncate max-w-xs">{value?.title || value?.id}</span>
+          {value?.id && (
+            <a
+              href={`https://snapshot.org/#/${value.space || 'cow.eth'}/proposal/${value.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-2 text-blue-600 hover:text-blue-700"
+            >
+              <ExternalLink size={14} />
+            </a>
+          )}
         </div>
       ),
       sortable: false
     },
     {
-      key: 'delegate',
-      label: 'To (Delegate)',
-      render: (value) => (
-        <div className="flex items-center">
-          <code className="text-sm font-mono text-gray-900">
-            {formatAddress(value)}
-          </code>
-          <a
-            href={`https://snapshot.org/#/profile/${value}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-2 text-blue-600 hover:text-blue-700"
-          >
-            <ExternalLink size={14} />
-          </a>
-        </div>
-      ),
-      sortable: false
+      key: 'choice',
+      label: 'Choice'
     },
     {
-      key: 'space',
-      label: 'Space',
-      render: (value) => (
-        <div className="text-sm text-gray-600">{value}</div>
-      ),
-      sortable: false
-    },
-    {
-      key: 'id',
-      label: 'Verification',
-      render: (value, row) => (
-        <a
-          href={`https://snapshot.org/#/delegate/${row.space}/${row.delegator}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
-        >
-          View
-          <ExternalLink size={12} className="ml-1" />
-        </a>
-      ),
-      sortable: false
+      key: 'vp',
+      label: 'Voting Power'
     }
   ];
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Delegation History
-        </h3>
-        <div className="text-sm text-gray-500">
-          {history.length} {history.length === 1 ? 'record' : 'records'}
-        </div>
+        <h3 className="text-lg font-semibold text-gray-900">Voting History</h3>
+        <div className="text-sm text-gray-500">{history.length} {history.length === 1 ? 'vote' : 'votes'}</div>
       </div>
 
-      <p className="text-sm text-gray-600 mb-4">
-        Complete delegation history for this address in CoW DAO governance.
-      </p>
+      <p className="text-sm text-gray-600 mb-4">Recent votes for this address in CoW DAO governance.</p>
 
-      <DataTable
-        columns={columns}
-        data={history}
-        defaultSortKey="timestamp"
-        defaultSortDirection="desc"
-      />
+      <DataTable columns={columns} data={history} defaultSortKey="created" defaultSortDirection="desc" />
 
       <div className="mt-4 pt-4 border-t border-gray-200">
         <div className="flex items-start text-sm text-gray-500">
           <AlertCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
-          <p>
-            Delegation history is retrieved from Snapshot GraphQL API. All delegations are verified on-chain.
-          </p>
+          <p>Voting history is retrieved from Snapshot GraphQL API.</p>
         </div>
       </div>
     </div>

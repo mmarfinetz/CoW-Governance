@@ -82,3 +82,31 @@ View query status via:
 - **Configuration Modal**: Click "Configuration" button in app footer
 - **Console Logs**: Startup validation logs query versions
 - **Cache Tab**: Monitor query cache status and age
+
+## Delegation Data
+
+For delegation analytics, the dashboard uses:
+- **Snapshot GraphQL API**: Off-chain proposals, votes, and delegation data
+- **Snapshot Delegate Registry**: On-chain delegation records stored at `0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446`
+- **Token Balances**: COW and vCOW balances from EVM chains
+
+### Key Delegation Contracts
+
+| Contract | Address | Chain | Purpose |
+|----------|---------|-------|---------|
+| COW Token | `0xDEf1CA1fb7FBcDC777520aa7f396b4E015F497aB` | Ethereum | Main COW token |
+| vCOW Token | `0xD057B63f5E69CF1B929b356b579Cba08D7688048` | Ethereum | Vesting COW |
+| Delegate Registry | `0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446` | Multi-chain | On-chain delegation records |
+
+### Delegation Metrics Available
+
+- Current delegated voting power per delegate
+- Delegation flows (gained/lost)
+- Number of delegators per delegate
+- Participation rate per delegate
+- Historical delegation changes
+
+For detailed delegation analytics, refer to:
+- `/src/services/delegationService.js` - Delegation data fetching
+- `/src/hooks/useDelegationData.js` - Delegation data hook
+- `/src/components/delegation/` - Delegation UI components

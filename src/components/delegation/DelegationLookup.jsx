@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, ExternalLink, AlertCircle, CheckCircle } from 'lucide-react';
-import { fetchDelegation, isValidAddress, isENSName } from '../../services/delegationService';
+import { fetchVotesByAddress, isValidAddress, isENSName } from '../../services/delegationService';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { ErrorMessage } from '../shared/ErrorMessage';
 import { DelegationHistory } from './DelegationHistory';
@@ -9,7 +9,7 @@ export function DelegationLookup() {
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [delegation, setDelegation] = useState(null);
+  const [activity, setActivity] = useState(null);
   const [searched, setSearched] = useState(false);
 
   const handleLookup = async () => {
@@ -29,16 +29,21 @@ export function DelegationLookup() {
 
     setLoading(true);
     setError(null);
-    setDelegation(null);
+    setActivity(null);
     setSearched(false);
 
     try {
-      const result = await fetchDelegation(address.trim());
-      setDelegation(result);
+      const votes = await fetchVotesByAddress(address.trim(), 50);
+      setActivity({
+        address: address.trim(),
+        totalVotes: votes.length,
+        lastVote: votes[0] || null,
+        recentVotes: votes.slice(0, 5)
+      });
       setSearched(true);
     } catch (err) {
       console.error('Error looking up delegation:', err);
-      setError('Failed to fetch delegation data. Please try again.');
+      setError('Failed to fetch voting activity. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -55,19 +60,15 @@ export function DelegationLookup() {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-  const getSnapshotUrl = (addr) => {
-    return `https://snapshot.org/#/profile/${addr}`;
-  };
+  const getSnapshotUrl = (addr) => `https://snapshot.org/#/profile/${addr}`;
 
   return (
     <div className="space-y-6">
       {/* Search Card */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Delegation Lookup
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Address Activity Lookup</h2>
         <p className="text-sm text-gray-600 mb-4">
-          Enter an Ethereum address or ENS name to check their current delegation status in CoW DAO governance.
+          Enter an Ethereum address or ENS name to check their recent voting activity in CoW DAO governance.
         </p>
 
         {/* Input and Search Button */}
@@ -115,31 +116,31 @@ export function DelegationLookup() {
       {/* Results */}
       {!loading && searched && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          {delegation ? (
-            // Has Delegation
+          {activity && activity.totalVotes > 0 ? (
+            // Has Activity
             <div className="space-y-4">
               <div className="flex items-start">
                 <CheckCircle className="text-green-500 mr-3 mt-1" size={24} />
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Delegation Found
+                    Voting Activity Found
                   </h3>
                   <p className="text-sm text-gray-600 mb-4">
-                    This address has delegated their voting power.
+                    This address has participated in Snapshot votes.
                   </p>
 
                   {/* Delegation Details */}
                   <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                     <div>
                       <label className="text-xs font-medium text-gray-500 uppercase">
-                        Delegator
+                        Address
                       </label>
                       <div className="flex items-center mt-1">
                         <code className="text-sm font-mono text-gray-900">
-                          {formatAddress(delegation.delegator)}
+                          {formatAddress(activity.address)}
                         </code>
                         <a
-                          href={getSnapshotUrl(delegation.delegator)}
+                          href={getSnapshotUrl(activity.address)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="ml-2 text-blue-600 hover:text-blue-700"
@@ -151,42 +152,21 @@ export function DelegationLookup() {
 
                     <div>
                       <label className="text-xs font-medium text-gray-500 uppercase">
-                        Delegated To
+                        Recent Activity
                       </label>
-                      <div className="flex items-center mt-1">
-                        <code className="text-sm font-mono text-gray-900">
-                          {formatAddress(delegation.delegate)}
-                        </code>
-                        <a
-                          href={getSnapshotUrl(delegation.delegate)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-2 text-blue-600 hover:text-blue-700"
-                        >
-                          <ExternalLink size={14} />
-                        </a>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Full address: {delegation.delegate}
+                      <div className="text-sm text-gray-900 mt-1">
+                        Total votes: {activity.totalVotes}
                       </div>
                     </div>
 
                     <div>
                       <label className="text-xs font-medium text-gray-500 uppercase">
-                        Delegation Date
+                        Last Vote
                       </label>
                       <div className="text-sm text-gray-900 mt-1">
-                        {new Date(delegation.timestamp * 1000).toLocaleDateString()} at{' '}
-                        {new Date(delegation.timestamp * 1000).toLocaleTimeString()}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase">
-                        Space
-                      </label>
-                      <div className="text-sm text-gray-900 mt-1">
-                        {delegation.space}
+                        {activity.lastVote
+                          ? `${new Date(activity.lastVote.created * 1000).toLocaleDateString()} at ${new Date(activity.lastVote.created * 1000).toLocaleTimeString()}`
+                          : 'N/A'}
                       </div>
                     </div>
                   </div>
@@ -194,12 +174,12 @@ export function DelegationLookup() {
                   {/* Link to Snapshot */}
                   <div className="mt-4">
                     <a
-                      href={`https://snapshot.org/#/delegate/${delegation.space}/${delegation.delegator}`}
+                      href={getSnapshotUrl(activity.address)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
                     >
-                      View on Snapshot
+                      View Profile on Snapshot
                       <ExternalLink size={14} className="ml-1" />
                     </a>
                   </div>
@@ -207,28 +187,16 @@ export function DelegationLookup() {
               </div>
             </div>
           ) : (
-            // No Delegation
+            // No Activity
             <div className="flex items-start">
               <AlertCircle className="text-amber-500 mr-3 mt-1" size={24} />
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No Delegation Found
+                  No Voting Activity Found
                 </h3>
                 <p className="text-sm text-gray-600">
-                  This address has not delegated their voting power in CoW DAO governance.
-                  They can vote directly on proposals.
+                  This address has no recorded voting activity in CoW DAO governance.
                 </p>
-                <div className="mt-4">
-                  <a
-                    href="https://snapshot.org/#/delegate/cow.eth"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
-                  >
-                    Delegate on Snapshot
-                    <ExternalLink size={14} className="ml-1" />
-                  </a>
-                </div>
               </div>
             </div>
           )}

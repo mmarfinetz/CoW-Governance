@@ -38,66 +38,71 @@ export function RecognizedDelegates({ delegates, maxDelegates = 20 }) {
     );
   }
 
+  // Prepare data and precomputed totals
+  const topDelegates = delegates.slice(0, maxDelegates);
+  const totalCount = topDelegates.reduce((sum, d) => sum + (d.delegatorCount || d.delegators || 0), 0);
+  const tableData = topDelegates.map((d, i) => ({ ...d, rank: i + 1 }));
+
   const columns = [
     {
       key: 'rank',
       label: 'Rank',
-      render: (value, row, index) => (
-        <div className="font-semibold text-gray-900">#{index + 1}</div>
-      ),
+      render: (value) => <div className="font-semibold text-gray-900">#{value}</div>,
       sortable: false
     },
     {
-      key: 'delegate',
+      key: 'address',
       label: 'Delegate Address',
-      render: (value) => (
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-sm">{truncateAddress(value)}</span>
-          <a
-            href={`https://snapshot.org/#/profile/${value}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-700"
-          >
-            <ExternalLink size={14} />
-          </a>
-        </div>
-      ),
+      render: (value, row) => {
+        const addr = value || row.delegate || row.id;
+        return (
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm">{truncateAddress(addr)}</span>
+            <a
+              href={`https://snapshot.org/#/profile/${addr}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-700"
+            >
+              <ExternalLink size={14} />
+            </a>
+          </div>
+        );
+      },
       sortable: false
     },
     {
-      key: 'delegatedVotes',
-      label: 'Voting Power',
-      render: (value) => (
+      key: 'delegatorCount',
+      label: 'Votes',
+      render: (value, row) => (
         <span className="font-semibold text-blue-600">
-          {formatVotingPower(value || 0)}
+          {value || row.delegators || 0}
         </span>
       )
     },
     {
-      key: 'delegators',
-      label: 'Delegators',
-      render: (value) => (
-        <span className="text-gray-700">{value || 0}</span>
-      )
+      key: 'votingPower',
+      label: 'Voting Power',
+      render: (value, row) => {
+        const vp = value || row.delegatedVotes || 0;
+        if (vp === 0) {
+          return <span className="text-gray-400 text-sm">Not calculated</span>;
+        }
+        return (
+          <span className="text-gray-700">{formatVotingPower(vp)}</span>
+        );
+      }
     },
     {
       key: 'shareOfTotal',
       label: 'Share',
-      render: (value, row, index, data) => {
-        const totalVP = data.reduce((sum, d) => sum + (d.delegatedVotes || 0), 0);
-        const share = totalVP > 0 ? ((row.delegatedVotes || 0) / totalVP * 100) : 0;
-        return (
-          <Badge variant={share > 10 ? 'warning' : 'info'}>
-            {share.toFixed(1)}%
-          </Badge>
-        );
+      render: (value, row) => {
+        const share = totalCount > 0 ? (((row.delegatorCount || row.delegators || 0) / totalCount) * 100) : 0;
+        return <Badge variant={share > 10 ? 'warning' : 'info'}>{share.toFixed(1)}%</Badge>;
       },
       sortable: false
     }
   ];
-
-  const topDelegates = delegates.slice(0, maxDelegates);
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -106,11 +111,7 @@ export function RecognizedDelegates({ delegates, maxDelegates = 20 }) {
         <Badge variant="info">{topDelegates.length} delegates</Badge>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={topDelegates}
-        defaultSortKey="delegatedVotes"
-      />
+      <DataTable columns={columns} data={tableData} defaultSortKey="delegatorCount" />
     </div>
   );
 }

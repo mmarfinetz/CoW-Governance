@@ -21,11 +21,11 @@ export const API_CONFIG = {
     baseUrl: govConfig.apis.dune.baseUrl,
     apiKey: import.meta.env.VITE_DUNE_API_KEY,
     queries: {
-      // Query IDs from govConfig - confirmed working from CoW Protocol's dune-queries repo
-      treasury: govConfig.queries.dune.treasury.id,
-      revenue: govConfig.queries.dune.revenue.id,
-      solverRewards: govConfig.queries.dune.solverRewards.id,
-      solverInfo: govConfig.queries.dune.solverInfo.id
+      // Allow env overrides; fallback to govConfig defaults
+      treasury: import.meta.env.VITE_DUNE_Q_TREASURY || govConfig.queries.dune.treasury.id,
+      revenue: import.meta.env.VITE_DUNE_Q_REVENUE || govConfig.queries.dune.revenue.id,
+      solverRewards: import.meta.env.VITE_DUNE_Q_SOLVER_REWARDS || govConfig.queries.dune.solverRewards.id,
+      solverInfo: import.meta.env.VITE_DUNE_Q_SOLVER_INFO || govConfig.queries.dune.solverInfo.id
     }
   },
   coinGecko: {

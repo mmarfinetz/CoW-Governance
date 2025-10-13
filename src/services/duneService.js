@@ -100,6 +100,27 @@ export async function getQueryResults(queryId) {
 }
 
 /**
+ * Execute a query and return fresh results (polls until completion)
+ */
+async function fetchFreshResults(queryId, parameters = {}, maxWaitTime = 90000) {
+  const executionId = await executeQuery(queryId, parameters);
+
+  const start = Date.now();
+  while (Date.now() - start < maxWaitTime) {
+    const status = await getExecutionStatus(executionId);
+    if (status.state === 'QUERY_STATE_COMPLETED') {
+      // Once completed, the latest results are available at the query results endpoint
+      return await getQueryResults(queryId);
+    }
+    if (status.state === 'QUERY_STATE_FAILED') {
+      throw new Error(`Dune execution failed for query ${queryId}`);
+    }
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  throw new Error(`Dune execution timeout for query ${queryId}`);
+}
+
+/**
  * Execute query and wait for results
  */
 export async function executeAndWait(queryId, parameters = {}, maxWaitTime = 60000) {
@@ -145,7 +166,8 @@ export async function fetchTreasuryData() {
       };
     }
 
-    const results = await getQueryResults(QUERIES.treasury);
+    // Ensure fresh results on free plan by executing before fetching
+    const results = await fetchFreshResults(QUERIES.treasury);
     return {
       totalValue: results[0]?.total_value_usd || 0,
       composition: results,
@@ -171,7 +193,7 @@ export async function fetchRevenueData() {
       };
     }
 
-    const results = await getQueryResults(QUERIES.revenue);
+    const results = await fetchFreshResults(QUERIES.revenue);
     return {
       totalRevenue: results.reduce((sum, row) => sum + (row.revenue_usd || 0), 0),
       revenueByType: results,
@@ -197,7 +219,7 @@ export async function fetchSolverRewardsData() {
       };
     }
 
-    const results = await getQueryResults(QUERIES.solverRewards);
+    const results = await fetchFreshResults(QUERIES.solverRewards);
     return {
       totalRewards: results.reduce((sum, row) => sum + (row.rewards || 0), 0),
       solvers: results,
@@ -228,7 +250,7 @@ export async function fetchSolverInfoData() {
       };
     }
 
-    const results = await getQueryResults(QUERIES.solverInfo);
+    const results = await fetchFreshResults(QUERIES.solverInfo);
     return {
       activeSolvers: results.length,
       solverMetrics: results,

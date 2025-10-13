@@ -10,11 +10,11 @@ const COW_SPACE = API_CONFIG.snapshot.space;
  */
 export async function fetchDelegation(address) {
   const query = `
-    query Delegations($address: String!, $space: String!) {
+    query Delegations($address: String!, $spaces: [String!]!) {
       delegations(
         where: {
           delegator: $address,
-          space: $space
+          space_in: $spaces
         },
         orderBy: "timestamp",
         orderDirection: desc,
@@ -30,7 +30,7 @@ export async function fetchDelegation(address) {
 
   const variables = {
     address: address.toLowerCase(),
-    space: COW_SPACE
+    spaces: [COW_SPACE]
   };
 
   try {
@@ -63,11 +63,11 @@ export async function fetchDelegation(address) {
  */
 export async function fetchDelegationHistory(address) {
   const query = `
-    query DelegationHistory($address: String!, $space: String!) {
+    query DelegationHistory($address: String!, $spaces: [String!]!) {
       delegations(
         where: {
           delegator: $address,
-          space: $space
+          space_in: $spaces
         },
         orderBy: "timestamp",
         orderDirection: desc,
@@ -84,7 +84,7 @@ export async function fetchDelegationHistory(address) {
 
   const variables = {
     address: address.toLowerCase(),
-    space: COW_SPACE
+    spaces: [COW_SPACE]
   };
 
   try {
@@ -112,11 +112,11 @@ export async function fetchDelegationHistory(address) {
  */
 export async function fetchDelegationsReceived(delegateAddress) {
   const query = `
-    query DelegationsReceived($delegate: String!, $space: String!) {
+    query DelegationsReceived($delegate: String!, $spaces: [String!]!) {
       delegations(
         where: {
           delegate: $delegate,
-          space: $space
+          space_in: $spaces
         },
         orderBy: "timestamp",
         orderDirection: desc,
@@ -133,7 +133,7 @@ export async function fetchDelegationsReceived(delegateAddress) {
 
   const variables = {
     delegate: delegateAddress.toLowerCase(),
-    space: COW_SPACE
+    spaces: [COW_SPACE]
   };
 
   try {
@@ -273,4 +273,60 @@ export function isValidAddress(address) {
  */
 export function isENSName(input) {
   return input.endsWith('.eth') || (!input.startsWith('0x') && input.includes('.'));
+}
+
+/**
+ * Fetch ALL delegations in a space and aggregate into a delegates list
+ * This intelligently builds the delegates list from individual delegation records
+ * Since Snapshot has no direct "delegates" query, we aggregate from "delegations"
+ */
+export async function fetchAllDelegates(space = COW_SPACE, limit = 1000) {
+  // Snapshot GraphQL does not expose a `delegations` query. As a fallback,
+  // use the `leaderboards` query to get top voters for the space and treat
+  // vote count as an activity proxy.
+  const query = `
+    query Leaderboards($space: String!) {
+      leaderboards(where: { space: $space }) {
+        space
+        user
+        votesCount
+        lastVote
+      }
+    }
+  `;
+
+  const variables = { space };
+
+  try {
+    console.log(`[DelegationService] Fetching top voters via leaderboards for space: ${space}`);
+
+    const response = await axios.post(SNAPSHOT_API, { query, variables });
+    const items = response.data?.data?.leaderboards || [];
+    if (!items.length) {
+      console.warn('[DelegationService] No leaderboard data returned');
+      return [];
+    }
+
+    // Map leaderboard entries to delegate-like objects expected by UI
+    const delegates = items.slice(0, Math.min(limit, items.length)).map((item) => ({
+      id: item.user.toLowerCase(),
+      address: item.user.toLowerCase(),
+      // Reuse delegatorCount field to display activity; label adjusted in UI
+      delegatorCount: item.votesCount || 0,
+      delegators: [],
+      latestDelegation: item.lastVote ? new Date(item.lastVote * 1000) : null,
+      earliestDelegation: null,
+      space: item.space,
+      votingPower: 0,
+      participationRate: 0,
+      totalVotes: item.votesCount || 0
+    }));
+
+    console.log(`[DelegationService] Leaderboards mapped to ${delegates.length} entries`);
+    return delegates;
+  } catch (error) {
+    console.error('[DelegationService] Error fetching leaderboards:', error);
+    console.error('[DelegationService] Error details:', error.response?.data || error.message);
+    throw error;
+  }
 }

@@ -5,6 +5,7 @@ import { ErrorMessage } from '../shared/ErrorMessage';
 import { MetricCard } from '../shared/MetricCard';
 import { ChartContainer } from '../shared/ChartContainer';
 import { DelegationFlowChart } from '../delegation/DelegationFlowChart';
+import { DelegationBubbleMap } from '../delegation/DelegationBubbleMap';
 import { RecognizedDelegates } from '../delegation/RecognizedDelegates';
 import { DelegationLookup } from '../delegation/DelegationLookup';
 import { useDelegationData } from '../../hooks/useDelegationData';
@@ -37,7 +38,7 @@ export function DelegationDashboard() {
   }, []);
 
   // Show loading placeholder if data not yet loaded
-  if (!isVisible || (!delegates.length && !error && !metrics.totalDelegatedPower)) {
+  if (!isVisible || (!delegates.length && !error && !metrics.totalDelegates)) {
     return (
       <div className="space-y-6">
         <SectionHeader title="Delegation & Voting Power" />
@@ -59,17 +60,17 @@ export function DelegationDashboard() {
                 {error}
               </p>
               <p className="text-yellow-700 text-sm mt-3">
-                <strong>Note:</strong> The delegation query may not be available in the current Snapshot GraphQL API. 
-                This data may need to come from an alternative source. Visit{' '}
-                <a 
-                  href="https://snapshot.org/#/delegate/cow.eth" 
-                  target="_blank" 
+                <strong>Debugging Info:</strong> Check the browser console (Cmd+Option+J) for detailed error messages.
+                Visit{' '}
+                <a
+                  href="https://snapshot.org/#/delegate/cow.eth"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="underline font-medium"
                 >
                   snapshot.org/#/delegate/cow.eth
                 </a>
-                {' '}to view delegation information directly.
+                {' '}to view delegation information directly on Snapshot.
               </p>
               <button
                 onClick={refetch}
@@ -103,22 +104,25 @@ export function DelegationDashboard() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
-          title="Total Delegated Power"
-          value={formatNumber(metrics.totalDelegatedPower)}
-          icon={TrendingUp}
+          title="Total Delegates"
+          value={metrics.totalDelegates.toLocaleString()}
+          subtitle={`Unique delegates with ${metrics.totalDelegators} delegators`}
+          icon={Users}
           iconColor="text-blue-600"
           bgColor="bg-blue-50"
         />
         <MetricCard
           title="Total Delegators"
           value={metrics.totalDelegators.toLocaleString()}
+          subtitle="Active delegations"
           icon={Users}
           iconColor="text-green-600"
           bgColor="bg-green-50"
         />
         <MetricCard
-          title="Avg Delegation Size"
-          value={formatNumber(metrics.averageDelegationSize)}
+          title="Avg Delegators per Delegate"
+          value={metrics.averageDelegatorsPerDelegate.toFixed(1)}
+          subtitle="Average delegation size"
           icon={BarChart3}
           iconColor="text-purple-600"
           bgColor="bg-purple-50"
@@ -135,10 +139,18 @@ export function DelegationDashboard() {
 
       {/* Top Delegators Leaderboard - Visualization */}
       <ChartContainer
-        title="Top 20 Delegators by Voting Power"
-        subtitle="Distribution of delegated voting power across leading delegates"
+        title="Top 20 Delegates by Number of Delegators"
+        subtitle="Distribution of delegations across leading delegates"
       >
         <DelegationFlowChart delegates={delegates} maxDelegates={20} />
+      </ChartContainer>
+
+      {/* Bubblemap */}
+      <ChartContainer
+        title="Delegation Bubblemap"
+        subtitle="Bubble size reflects votes/delegations. Top entries shown."
+      >
+        <DelegationBubbleMap delegates={delegates} maxDelegates={30} />
       </ChartContainer>
 
       {/* Recognized Delegates Directory */}

@@ -37,10 +37,10 @@ export function DelegationFlowChart({ delegates, maxDelegates = 20 }) {
 
   // Prepare data for chart - top N delegates
   const chartData = delegates.slice(0, maxDelegates).map(delegate => ({
-    address: delegate.delegate,
-    shortAddress: truncateAddress(delegate.delegate),
-    votingPower: delegate.delegatedVotes || 0,
-    delegators: delegate.delegators || 0
+    address: delegate.address || delegate.delegate || delegate.id,
+    shortAddress: truncateAddress(delegate.address || delegate.delegate || delegate.id),
+    votingPower: delegate.votingPower || delegate.delegatedVotes || 0,
+    delegatorCount: delegate.delegatorCount || delegate.delegators || 0
   }));
 
   const CustomTooltip = ({ active, payload }) => {
@@ -49,11 +49,13 @@ export function DelegationFlowChart({ delegates, maxDelegates = 20 }) {
       return (
         <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
           <p className="font-mono text-xs text-gray-600 mb-2">{data.address}</p>
-          <p className="font-semibold text-gray-900">
-            Voting Power: {formatVotingPower(data.votingPower)}
-          </p>
+          {data.votingPower > 0 && (
+            <p className="font-semibold text-gray-900">
+              Voting Power: {formatVotingPower(data.votingPower)}
+            </p>
+          )}
           <p className="text-sm text-gray-600">
-            Delegators: {data.delegators}
+            Votes: {data.delegatorCount}
           </p>
         </div>
       );
@@ -74,12 +76,11 @@ export function DelegationFlowChart({ delegates, maxDelegates = 20 }) {
           tick={{ fontSize: 11 }}
         />
         <YAxis
-          label={{ value: 'Voting Power', angle: -90, position: 'insideLeft' }}
-          tickFormatter={formatVotingPower}
+          label={{ value: 'Votes Cast', angle: -90, position: 'insideLeft' }}
         />
         <Tooltip content={<CustomTooltip />} />
         <Legend />
-        <Bar dataKey="votingPower" name="Delegated Voting Power" radius={[8, 8, 0, 0]}>
+        <Bar dataKey="delegatorCount" name="Votes Cast" radius={[8, 8, 0, 0]}>
           {chartData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
