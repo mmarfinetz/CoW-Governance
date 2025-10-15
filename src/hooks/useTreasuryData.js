@@ -5,9 +5,10 @@ import { calculateTotalTreasuryValue } from '../services/safeService';
 import { getCachedTreasury } from '../services/cacheService';
 
 /**
- * Hook to fetch and manage treasury data from Dune Analytics (primary) and Safe
- * NOTE: Using Dune Analytics as the primary data source per project requirements
- * The Graph subgraph provides supplementary protocol metrics
+ * Hook to fetch and manage treasury data from CoW Protocol Subgraph (primary), Dune, and Safe
+ * NOTE: Using CoW Protocol Subgraph (The Graph) as the primary data source per project requirements
+ * Dune provides custom monthly revenue queries (optional)
+ * Safe provides treasury holdings
  */
 export function useTreasuryData(shouldFetch = true) {
   const [data, setData] = useState(null);
@@ -20,9 +21,9 @@ export function useTreasuryData(shouldFetch = true) {
       setLoading(true);
       setError(null);
 
-      console.log('[TreasuryData] Fetching from Dune Analytics, Safe, and The Graph APIs...');
+      console.log('[TreasuryData] Fetching from Subgraph (The Graph), Dune, and Safe APIs...');
 
-      // Fetch from Dune (primary), Safe, and The Graph (supplementary) - allow partial failures
+      // Fetch from Subgraph (primary), Dune (optional), and Safe - allow partial failures
       const [duneData, safeData, subgraphData] = await Promise.all([
         getCachedTreasury(() => fetchAllDuneData()).catch(err => {
           console.error('[TreasuryData] Dune fetch failed:', err);
