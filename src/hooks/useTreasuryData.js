@@ -23,18 +23,21 @@ export function useTreasuryData(shouldFetch = true) {
 
       console.log('[TreasuryData] Fetching from Subgraph (The Graph), Dune, and Safe APIs...');
 
-      // Fetch from Subgraph (primary), Dune (optional), and Safe - allow partial failures
+      // Fetch from Subgraph (primary), Dune (uses cached results), and Safe - allow partial failures
       const [duneData, safeData, subgraphData] = await Promise.all([
+        // Dune API (now fetches cached results directly - fast!)
         getCachedTreasury(() => fetchAllDuneData()).catch(err => {
-          console.error('[TreasuryData] Dune fetch failed:', err);
+          console.warn('[TreasuryData] Dune fetch failed (optional):', err.message);
           return null;
         }),
+        // Safe API
         calculateTotalTreasuryValue().catch(err => {
           console.error('[TreasuryData] Safe data fetch failed:', err);
           return { totalUsd: 0, composition: {}, safes: [] };
         }),
+        // Subgraph (primary)
         fetchAllProtocolData('mainnet').catch(err => {
-          console.error('[TreasuryData] Subgraph fetch failed (optional):', err);
+          console.error('[TreasuryData] Subgraph fetch failed:', err);
           return null;
         })
       ]);
@@ -61,16 +64,28 @@ export function useTreasuryData(shouldFetch = true) {
         console.log('[TreasuryData] Dune monthly revenue:', duneMonthlyRevenue.length, 'months, total: $', duneTotalRevenue.toFixed(2));
       }
 
-      // Check if we have protocol metrics data (Safe treasury might not have USD prices)
-      const hasProtocolData = duneTotalRevenue > 0 || (subgraphMetrics?.totalVolume > 0);
+      // Check if we have protocol metrics data from Subgraph (primary source)
+      // Dune is optional and may timeout - dashboard should work with just Subgraph
+      const hasSubgraphData = subgraphMetrics && (subgraphMetrics.totalVolume > 0 || subgraphMetrics.totalFeesCollected > 0);
+      const hasDuneData = duneTotalRevenue > 0;
 
-      if (!hasProtocolData) {
-        console.warn('[TreasuryData] No protocol data available from Dune or The Graph');
-        console.warn('[TreasuryData] Dune revenue:', duneTotalRevenue, 'Subgraph volume:', subgraphMetrics?.totalVolume);
-        setError('No protocol data available. Please check that VITE_DUNE_API_KEY is set in your .env file and is valid.');
+      if (!hasSubgraphData && !hasDuneData) {
+        console.error('[TreasuryData] No protocol data available from Subgraph or Dune');
+        console.error('[TreasuryData] Subgraph volume:', subgraphMetrics?.totalVolume, 'Subgraph fees:', subgraphMetrics?.totalFeesCollected);
+        console.error('[TreasuryData] Dune revenue:', duneTotalRevenue);
+        setError('Unable to fetch protocol data from The Graph subgraph. Please check your internet connection and try again.');
         setData(null);
         setLastUpdated(new Date());
         return;
+      }
+
+      // Log data source status
+      if (hasSubgraphData && !hasDuneData) {
+        console.log('[TreasuryData] ✓ Using Subgraph data (primary source). Dune data unavailable or timed out (optional).');
+      } else if (hasSubgraphData && hasDuneData) {
+        console.log('[TreasuryData] ✓ Using Subgraph + Dune data (best case scenario).');
+      } else if (!hasSubgraphData && hasDuneData) {
+        console.warn('[TreasuryData] ⚠️ Using Dune data only. Subgraph data unavailable (unusual).');
       }
 
       // Note: Safe data might be unavailable (USD = 0) because Safe API doesn't provide token prices

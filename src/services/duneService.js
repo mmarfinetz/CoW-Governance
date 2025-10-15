@@ -166,8 +166,8 @@ export async function fetchTreasuryData() {
       };
     }
 
-    // Ensure fresh results on free plan by executing before fetching
-    const results = await fetchFreshResults(QUERIES.treasury);
+    // Fetch cached results directly (much faster than executing)
+    const results = await getQueryResults(QUERIES.treasury);
     return {
       totalValue: results[0]?.total_value_usd || 0,
       composition: results,
@@ -193,7 +193,8 @@ export async function fetchRevenueData() {
       };
     }
 
-    const results = await fetchFreshResults(QUERIES.revenue);
+    // Fetch cached results directly (much faster than executing)
+    const results = await getQueryResults(QUERIES.revenue);
     return {
       totalRevenue: results.reduce((sum, row) => sum + (row.revenue_usd || 0), 0),
       revenueByType: results,
@@ -219,7 +220,8 @@ export async function fetchSolverRewardsData() {
       };
     }
 
-    const results = await fetchFreshResults(QUERIES.solverRewards);
+    // Fetch cached results directly (much faster than executing)
+    const results = await getQueryResults(QUERIES.solverRewards);
     return {
       totalRewards: results.reduce((sum, row) => sum + (row.rewards || 0), 0),
       solvers: results,
@@ -250,7 +252,8 @@ export async function fetchSolverInfoData() {
       };
     }
 
-    const results = await fetchFreshResults(QUERIES.solverInfo);
+    // Fetch cached results directly (much faster than executing)
+    const results = await getQueryResults(QUERIES.solverInfo);
     return {
       activeSolvers: results.length,
       solverMetrics: results,
