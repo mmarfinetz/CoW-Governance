@@ -32,17 +32,17 @@ export function DataTable({ columns, data, defaultSortKey, className = '' }) {
   }, [data, sortKey, sortDirection]);
 
   return (
-    <div className={`bg-white rounded-lg shadow-md overflow-hidden ${className}`}>
+    <div className={`bg-cow-brown bg-opacity-60 backdrop-blur-sm rounded-cow shadow-lg overflow-hidden border border-cow-brown-light ${className}`}>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-cow-brown-light">
+          <thead className="bg-cow-brown-dark">
             <tr>
               {columns.map((column) => (
                 <th
                   key={column.key}
                   onClick={() => column.sortable !== false && handleSort(column.key)}
-                  className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                    column.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''
+                  className={`px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider ${
+                    column.sortable !== false ? 'cursor-pointer hover:bg-cow-brown-medium transition-colors' : ''
                   }`}
                 >
                   <div className="flex items-center">
@@ -59,11 +59,11 @@ export function DataTable({ columns, data, defaultSortKey, className = '' }) {
               ))}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-cow-brown bg-opacity-40 divide-y divide-cow-brown-light">
             {sortedData.map((row, index) => (
-              <tr key={index} className="hover:bg-gray-50">
+              <tr key={index} className="hover:bg-cow-brown-medium transition-colors">
                 {columns.map((column) => (
-                  <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm text-cow-pink-light">
                     {column.render ? column.render(row[column.key], row) : row[column.key]}
                   </td>
                 ))}

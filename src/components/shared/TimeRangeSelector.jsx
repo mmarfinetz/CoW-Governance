@@ -68,15 +68,15 @@ export function TimeRangeSelector() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+    <div className="bg-cow-brown bg-opacity-60 backdrop-blur-sm rounded-cow shadow-lg p-4 mb-6 border border-cow-brown-light">
       <div className="flex flex-col space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Calendar className="text-blue-500 mr-2" size={20} />
-            <h3 className="text-sm font-semibold text-gray-900">Time Range</h3>
+            <Calendar className="text-cow-orange mr-2" size={20} />
+            <h3 className="text-sm font-semibold text-cow-pink-light">Time Range</h3>
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-400">
             {getFormattedRange()}
           </div>
         </div>
@@ -87,10 +87,10 @@ export function TimeRangeSelector() {
             <button
               key={preset.id}
               onClick={() => handlePresetClick(preset.id)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                 selectedPreset === preset.id
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-cow-orange text-white shadow-cow-glow-sm'
+                  : 'bg-cow-brown-medium text-gray-300 hover:bg-cow-brown-light hover:text-cow-pink-light'
               }`}
             >
               {preset.label}
@@ -100,10 +100,10 @@ export function TimeRangeSelector() {
           {/* Custom Button */}
           <button
             onClick={handleCustomClick}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
               selectedPreset === TIME_RANGE_PRESETS.CUSTOM
-                ? 'bg-blue-500 text-white shadow-md'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-cow-orange text-white shadow-cow-glow-sm'
+                : 'bg-cow-brown-medium text-gray-300 hover:bg-cow-brown-light hover:text-cow-pink-light'
             }`}
           >
             Custom
@@ -112,42 +112,42 @@ export function TimeRangeSelector() {
 
         {/* Custom Date Picker */}
         {showCustomPicker && (
-          <div className="border-t pt-4 mt-2">
+          <div className="border-t border-cow-brown-light pt-4 mt-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-400 mb-1">
                   Start Date
                 </label>
                 <input
                   type="date"
                   value={tempStartDate}
                   onChange={(e) => setTempStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-cow-brown-medium border border-cow-brown-light rounded-md text-cow-pink-light focus:outline-none focus:ring-2 focus:ring-cow-orange transition-all"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-400 mb-1">
                   End Date
                 </label>
                 <input
                   type="date"
                   value={tempEndDate}
                   onChange={(e) => setTempEndDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-cow-brown-medium border border-cow-brown-light rounded-md text-cow-pink-light focus:outline-none focus:ring-2 focus:ring-cow-orange transition-all"
                 />
               </div>
             </div>
             <div className="flex justify-end mt-4">
               <button
                 onClick={() => setShowCustomPicker(false)}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 mr-2"
+                className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200 mr-2 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleApplyCustomRange}
                 disabled={!tempStartDate || !tempEndDate}
-                className="px-4 py-2 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-cow-orange text-white text-sm rounded-md hover:bg-cow-orange-hover transition-all duration-200 disabled:bg-cow-brown-light disabled:cursor-not-allowed disabled:text-gray-500"
               >
                 Apply
               </button>

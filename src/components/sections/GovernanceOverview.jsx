@@ -158,7 +158,7 @@ export function GovernanceOverview() {
           )}
           <button
             onClick={() => setShowMethodology(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-cow-orange hover:bg-cow-orange-hover text-white rounded-lg transition-all duration-200 font-medium shadow-cow-glow-sm"
           >
             <Info size={18} />
             Methodology
@@ -168,9 +168,9 @@ export function GovernanceOverview() {
 
       {/* Last Updated Timestamp */}
       {lastUpdated && (
-        <div className="text-sm text-gray-600 -mt-3">
+        <div className="text-sm text-gray-400 -mt-3">
           Data last reconciled: {lastUpdated.toLocaleString()}
-          {reconciliationLoading && <span className="ml-2 text-blue-600">(Running check...)</span>}
+          {reconciliationLoading && <span className="ml-2 text-cow-orange">(Running check...)</span>}
         </div>
       )}
 
@@ -187,8 +187,8 @@ export function GovernanceOverview() {
       <TimeRangeSelector />
 
       {/* Date Range Subtitle */}
-      <div className="text-sm text-gray-600 -mt-3 mb-2">
-        Showing data from <span className="font-semibold">{getFormattedRange()}</span>
+      <div className="text-sm text-gray-400 -mt-3 mb-2">
+        Showing data from <span className="font-semibold text-cow-orange">{getFormattedRange()}</span>
       </div>
 
       {/* Active Proposals Banner */}
@@ -198,26 +198,26 @@ export function GovernanceOverview() {
 
       {/* Empty State */}
       {!hasData && !govLoading && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <p className="text-yellow-800 text-center">
+        <div className="bg-yellow-500 bg-opacity-10 border border-yellow-500 border-opacity-30 rounded-cow p-6 backdrop-blur-sm">
+          <p className="text-yellow-400 text-center">
             No governance data found for the selected time period. Try selecting a different date range.
           </p>
         </div>
       )}
 
-      {/* Health Score Indicator */}
+      {/* Health Score Indicator with Forum Gradient */}
       {hasData && (
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white shadow-lg">
+        <div className="bg-gradient-cow-orange rounded-cow p-6 text-white shadow-lg shadow-cow-purple-glow">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold opacity-90">Governance Health Score</h3>
+              <h3 className="text-lg font-semibold">Governance Health Score</h3>
               <div className="flex items-baseline mt-2">
                 <span className="text-5xl font-bold">{healthScore}</span>
-                <span className="text-2xl ml-2 opacity-75">/100</span>
+                <span className="text-2xl ml-2 opacity-90">/100</span>
               </div>
-              <p className="mt-2 text-sm opacity-90">Status: {healthStatus.text}</p>
+              <p className="mt-2 text-sm text-cow-pink">Status: {healthStatus.text}</p>
             </div>
-            <Shield size={64} className="opacity-20" />
+            <Shield size={64} className="opacity-30" />
           </div>
         </div>
       )}
@@ -279,8 +279,8 @@ export function GovernanceOverview() {
 
       {/* Multi-Chain Voting Power Section */}
       {hasData && chainData && !chainLoading && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Multi-Chain Voting Distribution</h3>
+        <div className="bg-cow-brown bg-opacity-60 backdrop-blur-sm rounded-cow shadow-lg p-6 border border-cow-brown-light">
+          <h3 className="text-lg font-semibold text-cow-pink-light mb-4">Multi-Chain Voting Distribution</h3>
 
           {/* Chain Selector */}
           <div className="mb-6">
@@ -304,18 +304,18 @@ export function GovernanceOverview() {
               return (
                 <div
                   key={chain}
-                  className={`p-4 rounded-lg border-2 ${
-                    hasActivity ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50 opacity-60'
+                  className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                    hasActivity ? 'border-cow-orange bg-cow-brown-medium' : 'border-cow-brown-light bg-cow-brown-dark opacity-60'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <ChainBadge chain={chain} size="sm" />
                   </div>
                   <div className="mt-2">
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-2xl font-bold text-cow-pink-light">
                       {hasActivity ? `${(votingPower / 1000000).toFixed(1)}M` : '0'}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-400">
                       {hasActivity ? `${percentage}% of total` : 'No activity'}
                     </p>
                   </div>
@@ -325,17 +325,17 @@ export function GovernanceOverview() {
           </div>
 
           {/* Total Voting Power */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="mt-6 pt-6 border-t border-cow-brown-light">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-600">Total Voting Power (All Chains)</p>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="text-sm text-gray-400">Total Voting Power (All Chains)</p>
+                <p className="text-3xl font-bold text-cow-pink-light">
                   {((chainData.totalVotingPower || 0) / 1000000).toFixed(1)}M
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Proposals Analyzed</p>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="text-sm text-gray-400">Proposals Analyzed</p>
+                <p className="text-3xl font-bold text-cow-pink-light">
                   {chainData.proposalsAnalyzed || 0}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
@@ -346,8 +346,8 @@ export function GovernanceOverview() {
           </div>
 
           {/* Info Note */}
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
+          <div className="mt-4 p-3 bg-cow-orange bg-opacity-10 border border-cow-orange border-opacity-30 rounded-lg">
+            <p className="text-sm text-cow-pink-light">
               Chain detection analyzes Snapshot voting strategies to determine voting power distribution across Ethereum Mainnet, Gnosis Chain, Arbitrum, Base, and Polygon. Data is aggregated from recent closed proposals.
             </p>
           </div>
@@ -356,35 +356,35 @@ export function GovernanceOverview() {
 
       {/* Multi-Chain Loading State */}
       {hasData && chainLoading && (
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-cow-brown bg-opacity-60 backdrop-blur-sm rounded-cow shadow-lg p-6 border border-cow-brown-light">
           <LoadingSpinner message="Analyzing multi-chain voting power..." />
         </div>
       )}
 
       {/* Quick Stats */}
       {hasData && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Governance Quick Stats</h3>
+        <div className="bg-cow-brown bg-opacity-60 backdrop-blur-sm rounded-cow shadow-lg p-6 border border-cow-brown-light">
+          <h3 className="text-lg font-semibold text-cow-pink-light mb-4">Governance Quick Stats</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <p className="text-sm text-gray-600">Success Rate</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm text-gray-400">Success Rate</p>
+              <p className="text-2xl font-bold text-cow-pink-light">
                 {govData?.metrics?.successRate?.toFixed(0) || 0}%
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Max Votes Recorded</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm text-gray-400">Max Votes Recorded</p>
+              <p className="text-2xl font-bold text-cow-pink-light">
                 {((govData?.metrics?.maxVotes || 0) / 1000000).toFixed(1)}M
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Voting Mechanism</p>
-              <p className="text-lg font-semibold text-gray-900">Snapshot + oSnap</p>
+              <p className="text-sm text-gray-400">Voting Mechanism</p>
+              <p className="text-lg font-semibold text-cow-orange">Snapshot + oSnap</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Token Symbol</p>
-              <p className="text-lg font-semibold text-gray-900">COW / vCOW</p>
+              <p className="text-sm text-gray-400">Token Symbol</p>
+              <p className="text-lg font-semibold text-cow-orange">COW / vCOW</p>
             </div>
           </div>
         </div>

@@ -21,17 +21,17 @@ export function ChartContainer({
 }) {
   return (
     <div
-      className={`bg-white rounded-lg shadow-md overflow-hidden ${className}`}
+      className={`bg-cow-brown bg-opacity-60 backdrop-blur-sm rounded-cow shadow-lg overflow-hidden border border-cow-brown-light ${className}`}
       data-source={dataSource || 'unknown'}
     >
       <div className="p-6">
         {(title || subtitle) && (
           <div className="mb-4">
             {title && (
-              <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+              <h3 className="text-lg font-semibold text-cow-pink-light">{title}</h3>
             )}
             {subtitle && (
-              <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
+              <p className="text-sm text-gray-400 mt-1">{subtitle}</p>
             )}
           </div>
         )}

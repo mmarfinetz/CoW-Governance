@@ -2,7 +2,7 @@ import React from 'react';
 import { Loader2 } from 'lucide-react';
 
 /**
- * LoadingSpinner component
+ * LoadingSpinner component with CoW Forum branding
  */
 export function LoadingSpinner({ size = 'md', message = 'Loading...' }) {
   const sizeClasses = {
@@ -14,9 +14,9 @@ export function LoadingSpinner({ size = 'md', message = 'Loading...' }) {
 
   return (
     <div className="flex flex-col items-center justify-center p-8">
-      <Loader2 className={`animate-spin text-blue-500 ${sizeClasses[size]}`} />
+      <Loader2 className={`animate-spin text-cow-orange ${sizeClasses[size]}`} />
       {message && (
-        <p className="text-gray-600 mt-4">{message}</p>
+        <p className="text-gray-400 mt-4">{message}</p>
       )}
     </div>
   );

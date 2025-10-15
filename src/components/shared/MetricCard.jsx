@@ -23,12 +23,15 @@ export function MetricCard({
   endpoint,
   showAttribution = false
 }) {
+  // Forum color mappings
   const colorClasses = {
-    blue: 'border-blue-500 text-blue-500',
-    green: 'border-green-500 text-green-500',
-    yellow: 'border-yellow-500 text-yellow-500',
-    red: 'border-red-500 text-red-500',
-    gray: 'border-gray-500 text-gray-500'
+    blue: 'border-cow-orange text-cow-orange',  // Map blue to orange
+    green: 'border-cow-green text-cow-green',
+    yellow: 'border-cow-badge-general text-cow-badge-general',
+    red: 'border-cow-red text-cow-red',
+    gray: 'border-gray-500 text-gray-400',
+    purple: 'border-cow-purple text-cow-purple',
+    orange: 'border-cow-orange text-cow-orange'
   };
 
   // Ensure color exists in colorClasses
@@ -37,10 +40,10 @@ export function MetricCard({
 
   if (loading) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-gray-300">
+      <div className="bg-cow-brown bg-opacity-60 backdrop-blur-sm p-6 rounded-cow shadow-lg border-l-4 border-cow-brown-light">
         <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
-          <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-4 bg-cow-brown-medium rounded w-1/2 mb-3"></div>
+          <div className="h-8 bg-cow-brown-medium rounded w-3/4"></div>
         </div>
       </div>
     );
@@ -48,14 +51,14 @@ export function MetricCard({
 
   return (
     <div
-      className={`bg-white rounded-lg shadow-md border-l-4 ${borderClass} overflow-hidden`}
+      className={`bg-cow-brown bg-opacity-60 backdrop-blur-sm rounded-cow shadow-lg border-l-4 ${borderClass} overflow-hidden transition-all duration-200 hover:shadow-cow-glow-sm hover:border-opacity-100`}
       data-source={dataSource || 'unknown'}
     >
       <div className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <p className="text-gray-600 text-sm font-medium">{title}</p>
-            <p className="text-3xl font-bold mt-2 text-gray-900">{value}</p>
+            <p className="text-gray-400 text-sm font-medium">{title}</p>
+            <p className="text-3xl font-bold mt-2 text-cow-pink-light">{value}</p>
             {subtitle && (
               <p className="text-gray-500 text-xs mt-1">{subtitle}</p>
             )}
@@ -67,11 +70,11 @@ export function MetricCard({
         {trend && (
           <div className="mt-4 flex items-center text-sm">
             {trendDirection === 'up' ? (
-              <TrendingUp className="text-green-500 mr-1" size={16} />
+              <TrendingUp className="text-cow-green mr-1" size={16} />
             ) : (
-              <TrendingDown className="text-red-500 mr-1" size={16} />
+              <TrendingDown className="text-cow-red mr-1" size={16} />
             )}
-            <span className={trendDirection === 'up' ? 'text-green-500' : 'text-red-500'}>
+            <span className={trendDirection === 'up' ? 'text-cow-green' : 'text-cow-red'}>
               {trend}
             </span>
           </div>

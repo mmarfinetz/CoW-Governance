@@ -1,19 +1,24 @@
 import React from 'react';
 
 /**
- * Badge component for status indicators
+ * Badge component for status indicators with CoW Forum branding
  */
 export function Badge({ children, variant = 'default', size = 'md' }) {
   const variantClasses = {
-    default: 'bg-gray-100 text-gray-800',
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    danger: 'bg-red-100 text-red-800',
-    info: 'bg-blue-100 text-blue-800',
-    active: 'bg-blue-500 text-white',
-    closed: 'bg-gray-500 text-white',
-    passed: 'bg-green-500 text-white',
-    failed: 'bg-red-500 text-white'
+    default: 'bg-cow-brown-medium text-gray-300',
+    success: 'bg-cow-green bg-opacity-20 text-cow-green border border-cow-green border-opacity-30',
+    warning: 'bg-cow-badge-general bg-opacity-20 text-cow-badge-general border border-cow-badge-general border-opacity-30',
+    danger: 'bg-cow-red bg-opacity-20 text-cow-red border border-cow-red border-opacity-30',
+    info: 'bg-cow-orange bg-opacity-20 text-cow-orange border border-cow-orange border-opacity-30',
+    active: 'bg-cow-orange text-white shadow-cow-glow-sm',
+    closed: 'bg-cow-brown-light text-gray-400',
+    passed: 'bg-cow-green text-white shadow-sm',
+    failed: 'bg-cow-red text-white shadow-sm',
+    // Forum-specific badge colors
+    general: 'bg-cow-badge-general text-white',
+    technical: 'bg-cow-badge-technical text-white',
+    governance: 'bg-cow-badge-governance text-white',
+    knowledge: 'bg-cow-badge-knowledge text-white'
   };
 
   const sizeClasses = {
@@ -24,7 +29,7 @@ export function Badge({ children, variant = 'default', size = 'md' }) {
 
   return (
     <span
-      className={`inline-flex items-center rounded-full font-medium ${variantClasses[variant]} ${sizeClasses[size]}`}
+      className={`inline-flex items-center rounded-full font-medium transition-all duration-200 ${variantClasses[variant]} ${sizeClasses[size]}`}
     >
       {children}
     </span>
