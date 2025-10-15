@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CoW DAO Forum CSS Variables */
+:root {
+  --cow-brown: #3A2A2C;
+  --cow-brown-dark: #23191A;
+  --cow-brown-medium: #614649;
+  --cow-orange: #FF3215;
+  --cow-orange-hover: #E62D13;
+  --cow-pink: #FFEDEC;
+  --cow-text: #FFF8F7;
+  --cow-green: #3D854D;
+  --cow-red: #C31717;
+  --cow-purple: #9D256B;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -9,7 +23,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  @apply bg-gray-50;
+  @apply bg-cow-brown text-cow-pink-light;
 }
 
 code {
@@ -17,25 +31,26 @@ code {
     monospace;
 }
 
-/* Custom scrollbar */
+/* Forum-themed scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  @apply bg-cow-brown-dark;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-400 rounded;
+  @apply bg-cow-orange rounded-lg;
+  transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-500;
+  @apply bg-cow-orange-hover;
 }
 
-/* Loading spinner */
+/* Loading spinner with forum orange */
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -44,4 +59,32 @@ code {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* Forum glass-morphism card effect */
+.cow-card {
+  @apply bg-cow-brown bg-opacity-60 backdrop-blur-sm border border-cow-brown-light rounded-cow shadow-lg;
+  transition: all 0.2s ease-in-out;
+}
+
+.cow-card:hover {
+  @apply border-cow-orange shadow-cow-glow-sm;
+}
+
+/* Forum button styles */
+.cow-button-primary {
+  @apply bg-cow-orange text-white font-medium px-4 py-2 rounded-lg;
+  @apply hover:bg-cow-orange-hover transition-all duration-200;
+  @apply focus:outline-none focus:ring-2 focus:ring-cow-orange focus:ring-offset-2 focus:ring-offset-cow-brown-dark;
+}
+
+.cow-button-secondary {
+  @apply bg-cow-brown-medium text-cow-pink-light font-medium px-4 py-2 rounded-lg border border-cow-brown-light;
+  @apply hover:bg-cow-brown-light hover:border-cow-orange transition-all duration-200;
+  @apply focus:outline-none focus:ring-2 focus:ring-cow-orange focus:ring-offset-2 focus:ring-offset-cow-brown-dark;
+}
+
+/* Smooth transitions for all interactive elements */
+button, a, input, select {
+  transition: all 0.2s ease-in-out;
 }
