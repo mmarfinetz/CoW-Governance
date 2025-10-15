@@ -65,7 +65,7 @@ export function useTreasuryData(shouldFetch = true) {
 
       if (!hasProtocolData) {
         console.warn('[TreasuryData] No protocol data available from Dune or The Graph');
-        console.warn('[TreasuryData] Dune revenue:', duneRevenue, 'Subgraph volume:', subgraphMetrics?.totalVolume);
+        console.warn('[TreasuryData] Dune revenue:', duneTotalRevenue, 'Subgraph volume:', subgraphMetrics?.totalVolume);
         setError('No protocol data available. Please check that VITE_DUNE_API_KEY is set in your .env file and is valid.');
         setData(null);
         setLastUpdated(new Date());
